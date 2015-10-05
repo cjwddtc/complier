@@ -1,4 +1,4 @@
 complier
 ========
 
-a complier of test
+a complier of HIT course

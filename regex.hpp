@@ -23,7 +23,7 @@ public:
     }
     virtual state_type write_to_map(write_map &a,state_type b)
     {
-
+        std::cout << typeid(*this).name() << std::endl;
     }
     virtual ~regex_node_char()=default;
 };
@@ -40,7 +40,7 @@ public:
     }
     virtual state_type write_to_map(write_map &a,state_type b)
     {
-
+        std::cout << typeid(*this).name() << std::endl;
     }
     virtual ~regex_node_block()
     {
@@ -62,7 +62,7 @@ public:
         repeat_source(a),min(min_) {}
     virtual state_type write_to_map(write_map &a,state_type b)
     {
-
+        std::cout << typeid(*this).name() << std::endl;
     }
     virtual ~regex_node_repeat()
     {
@@ -81,7 +81,7 @@ public:
         :A(a),B(b) {}
     virtual state_type write_to_map(write_map &a,state_type b)
     {
-
+        std::cout << typeid(*this).name() << std::endl;
     }
     virtual ~regex_node_or()
     {
@@ -100,7 +100,7 @@ public:
     regex_node_one_none(regex_node_base<write_map>* source_):source(source_) {}
     virtual state_type write_to_map(write_map &a,state_type b)
     {
-
+        std::cout << typeid(*this).name() << std::endl;
     }
     ~regex_node_one_none()
     {
@@ -121,24 +121,27 @@ regex_node_block<write_type> *read_regex_string(ITERATOR &start,ITERATOR finish)
         switch(*start)
         {
         case ')':
-            start++;
+            ++start;
             return a;
         case '*':
         {
             regex_node_base<write_type> *&b=a->regex_nodes.back();
             b=new regex_node_repeat<write_type>(b,0);
+            ++start;
         }
         break;
         case '+':
         {
             regex_node_base<write_type> *&b=a->regex_nodes.back();
             b=new regex_node_repeat<write_type>(b,1);
+            ++start;
         }
         break;
         case '?':
         {
             regex_node_base<write_type> *&b=a->regex_nodes.back();
             b=new regex_node_one_none<write_type>(b);
+            ++start;
         }
         break;
         case '|':
@@ -150,7 +153,6 @@ regex_node_block<write_type> *read_regex_string(ITERATOR &start,ITERATOR finish)
         default:
             a->add(read_regex_unit<write_type>(start,finish));
         }
-        start++;
     }
     return a;
 }
@@ -174,6 +176,7 @@ regex_node_base<write_type> *read_regex_unit(ITERATOR &start,ITERATOR finish)
         throw *start;
         break;
     default:
+        printf("read:%c\n",*start);
         re=new regex_node_char<write_type>(*start);
     }
     start++;

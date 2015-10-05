@@ -15,6 +15,10 @@ public:
     {
         ptr=a.ptr;
     }
+    state_line(const state_line<state_type,char_type> &other){
+        ptr=new state_type[1<<sizeof(char_type)];
+        memcpy(ptr,other.ptr,(1<<sizeof(char_type))*sizeof(state_type));
+    }
     ~state_line()
     {
         delete[] ptr;
@@ -27,10 +31,36 @@ public:
     }
 };
 
+enum state_type{
+    loop,finish,normal
+};
+
+template <class state_type,class char_type>
+class line_two{
+    state_type type;
+    state_line<state_type,char_type> front;
+    state_line<state_type,char_type> behand;
+    line_two(state_type type_=normal):type(type_){}
+    
+    line_two(const line_two<state_type,char_type> &other):
+    behand(other.behand),type(other.type){}
+    
+    line_two(line_two<state_type,char_type> &&other):
+    front(other.front),behand(other.behand),type(other.type){}
+    state_type &get_front_type(char_type ch){
+        return front[ch];
+    }
+    state_type &get_behand_type(char_type ch){
+        return behand[ch];
+    }
+    state_type &operator [](char_type ch){
+        return front[ch];
+    }
+};
+
 template <class T>
 class map_two
 {
-
     std::vector<T> plus;
     std::vector<T> minus;
 public:

@@ -23,7 +23,7 @@ public:
     }
     virtual state_type write_to_map(write_map &a,state_type b)
     {
-        std::cout << typeid(*this).name() << std::endl;
+        
     }
     virtual ~regex_node_char()=default;
 };

@@ -7,6 +7,8 @@
 #include "cffx.hpp"
 #include "regex_map_two.hpp"
 using std::string;
+using std::cout;
+using std::endl;
 typedef map_two<state_line<int,char>> map_two_de;
 int main()
 {

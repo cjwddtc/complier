@@ -1,7 +1,7 @@
 CC=clang
 CXX=clang++
 CFLAGS= 
-CXXFLAGS=-std=c++11 -stdlib=libc++ -g
+CXXFLAGS=-std=c++11 -stdlib=libc++ -g -Wno-return-type
 SOURCES = $(wildcard *.cpp)
 OBJS = $(patsubst %.cpp, %.o,$(SOURCES))
 RULES = $(patsubst %.cpp, %.d,$(SOURCES))

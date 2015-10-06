@@ -23,7 +23,10 @@ public:
     }
     virtual state_type write_to_map(write_map &a,state_type b)
     {
-        
+        state_type state=a[b][ch];
+        if(state==0){
+            
+        }
     }
     virtual ~regex_node_char()=default;
 };

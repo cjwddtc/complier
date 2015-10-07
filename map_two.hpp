@@ -33,7 +33,7 @@ public:
         return ptr[n];
     }
 };
-
+// no use
 template <class state_type,class char_type>
 class node{
     state_type after[getspace<char_type>()];
@@ -47,7 +47,7 @@ class node{
         memcpy(before,a.before,getspace<char_type>()*sizeof(state_type));
     }
 };
-
+//no use
 template <class T,unsigned char N>
 class multivector{
     size_t index[N];
@@ -73,8 +73,8 @@ class multivector{
 template <class T>
 class map_two
 {
-    std::vector<T> plus;
-    std::vector<T> minus;
+    std::vector<T> list;
+    size_t div;
 public:
     map_two()
     {
@@ -96,12 +96,12 @@ public:
             assert(1);
         }
     }
-    int add_plus()
+    int add_A()
     {
         plus.push_back(T());
         return plus.size();
     }
-    int add_minus()
+    int add_B()
     {
         minus.push_back(T());
         return -minus.size();

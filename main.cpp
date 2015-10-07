@@ -17,10 +17,10 @@ int main()
     auto sta=str.begin();
     map_two_de a;
     int n=0;
-    regex_node_block<map_two_de> *q=read_regex_string<map_two_de>(sta,str.end());/*
+    regex_node_block<map_two_de> *q=read_regex_string<map_two_de>(sta,str.end());
     for(auto b:q->regex_nodes){
         b->write_to_map(a,n);
-    }*/
+    }
     std::cout << q->regex_nodes.size() << std::endl;
     return 0;
 }

@@ -10,7 +10,7 @@ public:
     typedef typename write_map::type_state state_type;
     //this func is to convert regex to map by recurse
     //the b is input state return the state after the func called
-    virtual state_type &write_to_map(write_map &a,state_type &b,state_type fin_state=0)=0;
+    virtual state_type &write_to_map(write_map &a,state_type &b)=0;
 };
 
 template <class write_map>
@@ -24,8 +24,8 @@ public:
     {
         ch=ch_;
     }
-    virtual state_type &write_to_map(write_map &a,state_type &b,,state_type fin_state=0)
-    {
+    virtual state_type &write_to_map(write_map &a,state_type &b)
+    {/*
         if(fin_state)
         {
             a[b][ch]=fin_state;
@@ -38,7 +38,7 @@ public:
                 c=a.add_A(line());
             }
         }
-        return a[b][ch];
+        return a[b][ch];*/
     }
     virtual ~regex_node_char()=default;
 };

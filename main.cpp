@@ -3,12 +3,15 @@
 #include <vector>
 #include <list>
 #include <assert.h>
+#include "dfa.h"
 #include "predef.h"
 #include "cffx.hpp"
 #include "regex_map_two.hpp"
 using std::string;
 using std::cout;
 using std::endl;
+
+nfa<char> as;
 
 int main()
 {
@@ -21,5 +24,7 @@ int main()
     for(auto b:q->regex_nodes){
         b->write_to_map(a,n);
     }
+    std::set<nfa_state<char>*> asdq;
+    dfa<char,int> qwe(as);
     return 0;
 }

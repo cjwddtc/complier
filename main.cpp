@@ -9,18 +9,17 @@
 using std::string;
 using std::cout;
 using std::endl;
-typedef map_two<state_line<int,char>> map_two_de;
+
 int main()
 {
     auto_machin<int,char> b;
-    string str="a+(s*|d)?|fi";
+    string str="a+(s*|(d-a))?|fi";
     auto sta=str.begin();
-    map_two_de a;
+    state_map<int,char> a;
     int n=0;
-    regex_node_block<map_two_de> *q=read_regex_string<map_two_de>(sta,str.end());
+    regex_node_block<state_map<int,char>> *q=read_regex_string<state_map<int,char>>(sta,str.end());
     for(auto b:q->regex_nodes){
         b->write_to_map(a,n);
     }
-    std::cout << q->regex_nodes.size() << std::endl;
     return 0;
 }

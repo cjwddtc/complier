@@ -18,7 +18,7 @@ template<class state_type,class code_type,class T=print_<state_type,code_type>>
 class auto_machin
 {
 public:
-    map_two<state_line<state_type,code_type>> map;
+    state_map<state_type,code_type> map;
     state_type currentstate;
     T out;
     basic_string<code_type> buf;

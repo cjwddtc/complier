@@ -3,7 +3,7 @@
 #include <vector>
 #include <utility>
 template <class T>
-constexpr int getspace(){return 1<<(sizeof(T)*8);}
+constexpr int get_space(){return 1<<(sizeof(T)*8);}
 
 template <class state_type,class char_type>
 class state_line
@@ -12,14 +12,14 @@ public:
     state_type *ptr;
     state_line()
     {
-        ptr=new state_type[getspace<char_type>()];
+        ptr=new state_type[get_space<char_type>()];
     }
     state_line(state_line<state_type,char_type> &&a)
     {
         ptr=a.ptr;
     }
     state_line(const state_line<state_type,char_type> &other){
-        ptr=new state_type[getspace<char_type>()];
+        ptr=new state_type[get_space<char_type>()];
         memcpy(ptr,other.ptr,(1<<sizeof(char_type))*sizeof(state_type));
     }
     ~state_line()
@@ -28,23 +28,24 @@ public:
     }
     state_type &operator[](int n)
     {
-        assert(n<getspace<char_type>());
+        assert(n<get_space<char_type>());
         assert(n>=0);
         return ptr[n];
     }
 };
+
 // no use
 template <class state_type,class char_type>
 class node{
-    state_type after[getspace<char_type>()];
-    state_type before[getspace<char_type>()];
+    state_type after[get_space<char_type>()];
+    state_type before[get_space<char_type>()];
     node(){
-        memset(after,0,getspace<char_type>()*sizeof(state_type));
-        memset(before,0,getspace<char_type>()*sizeof(state_type));
+        memset(after,0,get_space<char_type>()*sizeof(state_type));
+        memset(before,0,get_space<char_type>()*sizeof(state_type));
     }
     node(const node<state_type,char_type> &a){
-        memcpy(after,a.after,getspace<char_type>()*sizeof(state_type));
-        memcpy(before,a.before,getspace<char_type>()*sizeof(state_type));
+        memcpy(after,a.after,get_space<char_type>()*sizeof(state_type));
+        memcpy(before,a.before,get_space<char_type>()*sizeof(state_type));
     }
 };
 //no use
@@ -70,42 +71,51 @@ class multivector{
     }
 };
 
-template <class T>
+template <class T,class index_tpye>
 class map_two
 {
-    std::vector<T> list;
-    size_t div;
+    std::vector<T> A;
+    std::vector<T> B;
 public:
-    map_two()
+    typedef T value_type;
+    map_two()=default;
+    //two array ,one plus one minus
+    T &operator[](index_tpye n)
     {
-        plus.resize(1);
-        minus.resize(1);
-    }
-    T &operator[](int n)
-    {
-        if(n>0)
-        {
-            return plus[n];
-        }
-        else if(n<0)
-        {
-            return minus[-n];
-        }
-        else
-        {
-            assert(1);
+        //don't accept 0
+        assert(n);
+        if(n>0){
+            return A[n-1];
+        }else{
+            return B[-1-n];
         }
     }
-    int add_A()
+    index_tpye add_A(T &&a)
     {
-        plus.push_back(T());
-        return plus.size();
+        A.push_back(std::move(a));
+        return A.size();
     }
-    int add_B()
+    index_tpye add_B(T &&a)
     {
-        minus.push_back(T());
-        return -minus.size();
+        B.push_back(std::move(a));
+        return -B.size();
     }
+    index_tpye add_A(const T &a)
+    {
+        A.push_back(a);
+        return A.size();
+    }
+    index_tpye add_B(const T &a)
+    {
+        B.push_back(a);
+        return -B.size();
+    }
+};
+template<class state_type,class code_type>
+class state_map:public map_two<state_line<state_type,code_type>,state_type>{
+public:
+    typedef state_type type_state;
+    typedef code_type type_code;
 };
 
 

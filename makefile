@@ -1,7 +1,7 @@
 CC=clang
 CXX=clang++
 CFLAGS= 
-CXXFLAGS=-std=c++11 -stdlib=libc++ -g -Wno-return-type
+CXXFLAGS=-std=c++14 -stdlib=libc++ -g -Wno-return-type
 SOURCESCPP = $(wildcard *.cpp)
 SOURCESC = $(wildcard *.c)
 LD_FLAG=-stdlib=libc++

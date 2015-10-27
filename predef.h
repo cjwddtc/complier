@@ -5,12 +5,14 @@ template <class T>
 constexpr T get_range_low()
 {
     assert(1);
+    return T();
 }
 
 template <class T>
 constexpr T get_range_hight()
 {
     assert(1);
+    return T();
 }
 
 template <>

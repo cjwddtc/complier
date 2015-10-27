@@ -1,0 +1,15 @@
+*.o
+
+*.d
+
+main
+
+.c9
+
+*.sh
+*.exe
+bin\
+obj\
+*.cbp
+*.layout
+*.depend

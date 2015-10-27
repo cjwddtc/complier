@@ -1,5 +1,6 @@
 #ifndef PREDEF_H_INCLUDED
 #define PREDEF_H_INCLUDED
+<<<<<<< HEAD
 
 template <class T>
 constexpr T get_range_low()
@@ -36,5 +37,9 @@ char get_null_char<char>()
 {
     return 0;
 }
+=======
+#define line_len 128
+
+>>>>>>> github/master
 
 #endif // PREDEF_H_INCLUDED

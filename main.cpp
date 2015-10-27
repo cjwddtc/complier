@@ -2,16 +2,23 @@
 #include <memory>
 #include <vector>
 #include <list>
+<<<<<<< HEAD
 #include <fstream>
+=======
+>>>>>>> github/master
 #include <assert.h>
 #include "dfa.h"
 #include "predef.h"
 #include "cffx.hpp"
+<<<<<<< HEAD
 #include <string.h>
+=======
+>>>>>>> github/master
 #include "regex_map_two.hpp"
 using std::string;
 using std::cout;
 using std::endl;
+<<<<<<< HEAD
 template <class state_type,class char_type>
 dfa<char_type,state_type> *get_dfa(std::istream &file){
     char stri[1024];
@@ -77,5 +84,23 @@ int main()
     a->read('\n');
     a->read_file(filei);
     std::cout << a->result << std::endl;
+=======
+
+nfa<char> as;
+
+int main()
+{
+    auto_machin<int,char> b;
+    string str="a+(s*|(d-a))?|fi";
+    auto sta=str.begin();
+    state_map<int,char> a;
+    int n=0;
+    regex_node_block<state_map<int,char>> *q=read_regex_string<state_map<int,char>>(sta,str.end());
+    for(auto b:q->regex_nodes){
+        b->write_to_map(a,n);
+    }
+    std::set<nfa_state<char>*> asdq;
+    dfa<char,int> qwe(as);
+>>>>>>> github/master
     return 0;
 }

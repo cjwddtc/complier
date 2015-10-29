@@ -69,8 +69,8 @@ int main()
     }
     }
     printf("%s\n",qw.finish_map[4].c_str());*/
-    std::ifstream fileo("D:\\regex.txt",std::ios_base::in);
-    std::ifstream filei("D:\\in.txt",std::ios_base::in);
+    std::ifstream fileo("regex.txt",std::ios_base::in);
+    std::ifstream filei("in.txt",std::ios_base::in);
     dfa<char,int> *a=get_dfa<int,char>(fileo);
     std::cout << "hang:" << a->state_map.size() << std::endl;
     a->read('\n');

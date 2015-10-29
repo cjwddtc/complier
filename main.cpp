@@ -76,5 +76,6 @@ int main()
     a->read('\n');
     a->read_file(filei);
     std::cout << a->result << std::endl;
+	getchar();
     return 0;
 }

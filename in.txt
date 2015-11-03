@@ -1,0 +1,4 @@
+while(-14.4e12){
+	char *a="asd\"q\n";
+	char b='q';
+}

@@ -13,7 +13,7 @@ public:
         std::cout << a << "\n" << b << std::endl;
     }
 };
-
+ 
 template<class state_type,class code_type,class T=print_<state_type,code_type>>
 class auto_machin
 {

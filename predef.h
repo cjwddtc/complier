@@ -1,5 +1,6 @@
 #ifndef PREDEF_H_INCLUDED
 #define PREDEF_H_INCLUDED
+#include <limits.h>
 
 template <class T>
 constexpr T get_range_low()

@@ -1,7 +1,7 @@
 CC=clang
 CXX=clang++
 CFLAGS= 
-CXXFLAGS=-std=c++11 -g -Wno-return-type -Wno-comment -Wno-deprecated-declarations
+CXXFLAGS=-std=c++11 -g -Wno-return-type -Wno-comment -Wno-deprecated-declarations -Wno-c++1y-extensions
 target=main
 SOURCESCPP = $(wildcard *.cpp)
 SOURCESC = $(wildcard *.c)

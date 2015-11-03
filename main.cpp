@@ -73,8 +73,7 @@ int main()
     std::ifstream filei("in.txt",std::ios_base::in);
     dfa<char,int> *a=get_dfa<int,char>(fileo);
     std::cout << "hang:" << a->state_map.size() << std::endl;
-    a->read('\n');
-    a->read_file(filei);
+    //a->read(istreambuf_iterator<char>(filei),istreambuf_iterator<char>(),[](){});
     std::cout << a->result << std::endl;
 	getchar();
     return 0;

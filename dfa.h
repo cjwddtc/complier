@@ -2,12 +2,13 @@
 #define DFA_H_INCLUDED
 #include <map>
 #include "predef.h"
+#include "map_two.hpp"
 #include <set>
 #include <vector>
 #include <assert.h>
-#include "map_two.hpp"
 #include <memory>
 #include <iostream>
+#include <iterator>
 //#define DEBUG_MAP
 template <class char_type>
 class nfa_state;
@@ -26,6 +27,7 @@ public:
     static state_set<char_type> move(state_set<char_type> source,char_type ch);
     void print();
 };
+
 template <class char_type>
 class nfa_state
 {
@@ -190,24 +192,23 @@ public:
             finish_map[m]=str;
         }
     }
-    void read_file(std::istream &file){
+	template <class ITERATOR,class FUNC>
+    void read(ITERATOR start,ITERATOR end,FUNC fun){
         std::string a;
         int line=1;
-        char b;
-        while(!file.eof()){
-            file.get(b);
+        while(start!=end){
             resole:
-            if(read(b)){
+            if(read(*start)){
                 if(result!="null"){
-                    std::cout << line << ":" << result << ":" << a << std::endl;
+					fun(make_pair(result,a));
                 }
                 a.clear();
-                if(b=='\n'){
+                if(*start=='\n'){
                     line++;
                 }
                 goto resole;
             }else{
-                a.push_back(b);
+                a.push_back(*start);
             }
         }
     }

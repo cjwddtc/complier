@@ -15,7 +15,7 @@ class nfa_state;
 template <class char_type>
 using state_set=std::set<nfa_state<char_type>*>;
 template <class char_type>
-using ptr_state_set=std::auto_ptr<state_set<char_type>>;
+using ptr_state_set=std::unique_ptr<state_set<char_type>>;
 template <class char_type>
 class nfa
 {
@@ -50,16 +50,15 @@ public:
             }
         }
     }
-    ptr_state_set<char_type> expand(ptr_state_set<char_type> source){
+    void expand(state_set<char_type> *source){
         auto b=edge.find(get_null_char<char_type>());
         while(b!=edge.end() && b->first==get_null_char<char_type>()){
             if(source->find(b->second)==source->end()){
                 source->insert(b->second);
-                source=b->second->expand(source);
+                b->second->expand(source);
             }
             ++b;
         }
-        return source;
     }
 };
 template <class char_type>
@@ -81,8 +80,8 @@ state_set<char_type> nfa<char_type>::move(state_set<char_type> source,char_type 
         {
             ptr_state_set<char_type> exp_set(new state_set<char_type>());
             ret_set.insert(b->second);
-            auto a=b->second->expand(exp_set);
-            ret_set.insert(a->begin(),a->end());
+            b->second->expand(exp_set.get());
+            ret_set.insert(exp_set->begin(),exp_set->end());
             b++;
         }
     }/*
@@ -119,7 +118,7 @@ public:
         current_state=0;
         ptr_state_set<char_type> fb(new state_set<char_type>);
         for(nfa_state<char_type> *a:n.start_state){
-            fb=a->expand(fb);
+            a->expand(fb.get());
             fb->insert(a);
         }
         //all state

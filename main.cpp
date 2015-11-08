@@ -4,20 +4,23 @@
 #include <list>
 #include <fstream>
 #include <assert.h>
+#include "predef.h"
+#include "regex.hpp"
 #include "dfa.h"
 #include "predef.h"
-#include "cffx.hpp"
 #include <string.h>
-#include "regex_map_two.hpp"
+#include "yufashu.hpp"
 using std::string;
 using std::cout;
 using std::endl;
 template <class state_type,class char_type>
-dfa<char_type,state_type> *get_dfa(std::istream &file){
+dfa<char_type,state_type> *get_dfa(std::istream &file)
+{
     char stri[1024];
     char *str=stri;
     nfa<char_type> as;
-    while(1){
+    while(1)
+    {
         file.getline(str,1024);
         regex_node_block<nfa_state<char>> *q=read_regex_string<nfa_state<char>>(str,str+strlen(str));
         //q->print();
@@ -25,7 +28,8 @@ dfa<char_type,state_type> *get_dfa(std::istream &file){
         q->write_last_name(std::string(str));
         q->write_to_map(*as.start_state.begin());
         dfa<char_type,state_type> qwe(as);
-        if(file.eof()){
+        if(file.eof())
+        {
             break;
         }
     }
@@ -39,10 +43,10 @@ int main()
     dfa<char,int> *a=get_dfa<int,char>(fileo);
     std::cout << "hang:" << a->state_map.size() << std::endl;
     a->read(std::istreambuf_iterator<char>(filei),std::istreambuf_iterator<char>(),
-            [](std::pair<std::string,std::string> a){
-                printf("%s:%s\n",a.first.c_str(),a.second.c_str());
-            });
+            [](std::pair<std::string,std::string> a)
+    {
+        printf("%s:%s\n",a.first.c_str(),a.second.c_str());
+    });
     std::cout << a->result << std::endl;
-	getchar();
     return 0;
 }

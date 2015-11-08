@@ -32,7 +32,8 @@ public:
         a->link(ch,s);
         return s;
     }
-    virtual void write_last_name(std::string name){
+    virtual void write_last_name(std::string name)
+    {
         this->name=name;
     }
     virtual void print(int tab=0)
@@ -59,12 +60,13 @@ public:
     virtual write_map *write_to_map(write_map *a)
     {
         write_map *s=new write_map(name);
-        for(char_type ch=get_range_low<char_type>();ch<get_range_hight<char_type>();ch++)
+        for(char_type ch=get_range_low<char_type>(); ch<get_range_hight<char_type>(); ch++)
             if(ch!=this->ch)
                 a->link(ch,s);
         return s;
     }
-    virtual void write_last_name(std::string name){
+    virtual void write_last_name(std::string name)
+    {
         this->name=name;
     }
     virtual void print(int tab=0)
@@ -91,12 +93,14 @@ public:
     virtual write_map *write_to_map(write_map *a)
     {
         write_map *ptr=a;
-        for(regex_node_base<write_map>* b:regex_nodes){
+        for(regex_node_base<write_map>* b:regex_nodes)
+        {
             ptr=b->write_to_map(ptr);
         }
         return ptr;
     }
-    virtual void write_last_name(std::string name){
+    virtual void write_last_name(std::string name)
+    {
         regex_nodes.back()->write_last_name(name);
     }
     virtual void print(int tab=0)
@@ -133,11 +137,12 @@ public:
     {
         write_map *b=new write_map();
         write_map *c=repeat_source->write_to_map(b);
-        c->link(get_null_char<char_type>(),b);
-        a->link(get_null_char<char_type>(),b);
+        c->link(get_null_value<char_type>(),b);
+        a->link(get_null_value<char_type>(),b);
         return c;
     }
-    virtual void write_last_name(std::string name){
+    virtual void write_last_name(std::string name)
+    {
         repeat_source->write_last_name(name);
     }
     virtual void print(int tab=0)
@@ -168,11 +173,12 @@ public:
     virtual write_map *write_to_map(write_map *a)
     {
         write_map *s=new write_map(name);
-        A->write_to_map(a)->link(get_null_char<char_type>(),s);
-        B->write_to_map(a)->link(get_null_char<char_type>(),s);
+        A->write_to_map(a)->link(get_null_value<char_type>(),s);
+        B->write_to_map(a)->link(get_null_value<char_type>(),s);
         return s;
     }
-    virtual void write_last_name(std::string name){
+    virtual void write_last_name(std::string name)
+    {
         this->name=name;
     }
     virtual void print(int tab=0)
@@ -215,7 +221,8 @@ public:
         }
         return s;
     }
-    virtual void write_last_name(std::string name){
+    virtual void write_last_name(std::string name)
+    {
         this->name=name;
     }
     virtual void print(int tab=0)
@@ -241,10 +248,11 @@ public:
     virtual write_map *write_to_map(write_map *a)
     {
         write_map *m=source->write_to_map(a);
-        a->link(get_null_char<char_type>(),m);
+        a->link(get_null_value<char_type>(),m);
         return m;
     }
-    virtual void write_last_name(std::string name){
+    virtual void write_last_name(std::string name)
+    {
         source->write_last_name(name);
     }
     virtual void print(int tab=0)
@@ -281,7 +289,7 @@ regex_node_block<write_type> *read_regex_string(ITERATOR &start,ITERATOR finish)
         case '*':
         {
             regex_node_base<write_type> *&b=a->regex_nodes.back();
-            b=new regex_node_or<write_type>(new regex_node_repeat<write_type>(b),new regex_node_char<write_type>(get_null_char<char_type>()));
+            b=new regex_node_or<write_type>(new regex_node_repeat<write_type>(b),new regex_node_char<write_type>(get_null_value<char_type>()));
             ++start;
         }
         break;
@@ -349,17 +357,19 @@ regex_node_base<write_type> *read_regex_unit(ITERATOR &start,ITERATOR finish)
         --start;
         break;
     case '^':
+    {
+        ++start;
+        regex_node_base<write_type> *a=read_regex_unit<write_type>(start,finish);
+        regex_node_char<write_type> *b=dynamic_cast<regex_node_char<write_type> *>(a);
+        if(b==0)
         {
-            ++start;
-            regex_node_base<write_type> *a=read_regex_unit<write_type>(start,finish);
-            regex_node_char<write_type> *b=dynamic_cast<regex_node_char<write_type> *>(a);
-            if(b==0){
-                throw a;
-            }else
-                re=new regex_node_not_char<write_type>(b->ch);
-            start--;
+            throw a;
         }
-        break;
+        else
+            re=new regex_node_not_char<write_type>(b->ch);
+        start--;
+    }
+    break;
     case ')':
     case '*':
     case '+':

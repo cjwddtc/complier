@@ -28,14 +28,20 @@ constexpr char get_range_hight<char>()
 }
 
 template <class T>
-T get_null_char()
+T get_null_value()
 {
     assert(0);
     return T();
 }
 
 template <>
-char get_null_char<char>()
+char get_null_value<char>()
+{
+    return 0;
+}
+
+template <>
+unsigned int get_null_value<unsigned int>()
 {
     return 0;
 }

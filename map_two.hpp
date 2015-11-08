@@ -14,13 +14,14 @@ public:
     {
         ptr.resize(get_range_hight<char_type>()-get_range_low<char_type>());
     }
-    state_line(state_type *optr){
+    state_line(state_type *optr)
+    {
         ptr.assign(optr,optr+get_range_hight<char_type>()-get_range_low<char_type>());
     }
     state_line(state_line<state_type,char_type> &&a):ptr(std::move(a.ptr))
     {
     }
-    state_line(const state_line<state_type,char_type> &other):ptr(other.ptr){}
+    state_line(const state_line<state_type,char_type> &other):ptr(other.ptr) {}
     ~state_line()
     {
         ;

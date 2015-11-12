@@ -1,8 +1,11 @@
+#ifndef ARRAY_H
+#define ARRAY_H
 #include <memory>
 
 template <class T>
 class array
 {
+public:
     T *ptr;
     size_t max_size;
     array(size_t max_size_):max_size(max_size_),ptr(new T[max_size])
@@ -27,3 +30,4 @@ class array
         return ptr[n];
     }
 };
+#endif

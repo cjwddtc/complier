@@ -1,6 +1,7 @@
 #ifndef PREDEF_H_INCLUDED
 #define PREDEF_H_INCLUDED
 #include <limits.h>
+#include <string>
 
 template <class T>
 constexpr T get_range_low()
@@ -44,6 +45,12 @@ template <>
 unsigned int get_null_value<unsigned int>()
 {
     return 0;
+}
+
+template <>
+std::string get_null_value<std::string>()
+{
+    return "finish";
 }
 
 #endif // PREDEF_H_INCLUDED

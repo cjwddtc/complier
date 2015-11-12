@@ -23,6 +23,7 @@ class id_manager{
 public:
     size_t start_id;
     size_t get_id(std::string str);
+    id_manager();
 };
 
 class op

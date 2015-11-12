@@ -17,6 +17,9 @@ bool project::operator<(const project&a) const
     if(pos!=a.pos) return pos<a.pos;
     if(fin_id!=a.fin_id) return fin_id<a.fin_id;
 }
+
+
+id_manager::id_manager():start_id(1){}
 size_t id_manager::get_id(std::string str)
 {
     if(name_map.find(str)==name_map.end())
@@ -31,7 +34,7 @@ grammar::grammar(std::istream &file)
     std::string str;
     size_t a;
     std::vector<size_t> b;
-    while(!std::getline(file,).eof())
+    while(!std::getline(file,str).eof())
     {
         if(str[0]=='\t')
         {

@@ -8,7 +8,7 @@ class array
 public:
     T *ptr;
     size_t max_size;
-    array(size_t max_size_):max_size(max_size_),ptr(new T[max_size])
+    array(size_t max_size_):ptr(new T[max_size_]),max_size(max_size_)
     {
     }
     array(const array<T> &other):max_size(other.max_size)
@@ -20,10 +20,13 @@ public:
             a.construct(ptr+i,other.ptr[i]);
         }
     }
-    array(array<T> &&other):max_size(other.max_size),ptr(other.ptr) {}
+    array(array<T> &&other):ptr(other.ptr),max_size(other.max_size)
+    {
+        other.ptr=0;
+    }
     ~array()
     {
-        delete[] ptr;
+        if(ptr!=0) delete[] ptr;
     }
     T &operator [](size_t n)
     {

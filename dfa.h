@@ -4,6 +4,7 @@
 #include "predef.h"
 #include "map_two.hpp"
 #include "template.hpp"
+#include "gram_tree.h"
 #include <set>
 #include <vector>
 #include <assert.h>
@@ -96,12 +97,11 @@ public:
     }
     virtual void next(state_set *ptr,next_map &map)
     {
-        for(nfa_state<char_type> *b:*ptr){
-            for(auto a:b->edge){
-                if(map.find(a.first)==map.end()){
-                    map.insert(make_pair(a.first,new state_set()));
-                }
-                map[a.first]->insert(a.second);
+        for(nfa_state<char_type> *b:*ptr)
+        {
+            for(auto a:b->edge)
+            {
+                map[a.first].insert(a.second);
             }
         }
     }
@@ -109,14 +109,19 @@ public:
     {
         state_map[this->get_id(from_set)][ch]=this->get_id(to_set);
     }
-    virtual void add_state(size_t n,state_set *ptr){
-        if(state_map.size()!=n){
+    virtual void add_state(size_t n,state_set *ptr)
+    {
+        if(state_map.size()!=n)
+        {
             throw n;
         }
         state_map.push_back(state_line<size_t,char_type>());
         for(nfa_state<char_type>* d:*ptr)
         {
-            if(d->name!="")
+            if(d->name=="id" && finish_map[n]=="")
+            {
+                finish_map[n]=d->name;
+            }else if(d->name!="")
             {
                 finish_map[n]=d->name;
                 break;
@@ -126,7 +131,7 @@ public:
     dfa(const nfa<char_type> &n)
     {
         current_state=0;
-        this->make_map(n.start_state);
+        make_map(n.start_state);
     }
     dfa(std::istream &file)
     {
@@ -167,7 +172,7 @@ public:
             {
                 if(result!="null")
                 {
-                    fun(make_pair(result,a));
+                    fun(gram_tree_node(result,a));
                 }
                 a.clear();
                 if(*start=='\n')

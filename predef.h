@@ -1,31 +1,57 @@
-         RPC_C_IMP_LEVEL_IMPERSONATE_BIPC,
-            0,
-            EOAC_NONE_BIPC
-            )
-         ){
-         return false;
-      }
+#ifndef PREDEF_H_INCLUDED
+#define PREDEF_H_INCLUDED
+#include <limits.h>
+#include <string>
 
-      com_releaser<IWbemServices_BIPC> IWbemServices_releaser(pWbemServices);
+template <class T>
+constexpr T get_range_low()
+{
+    assert(1);
+    return T();
+}
 
-      strValue.clear();
-      strValue += L"Select ";
-      strValue += wmi_class_var;
-      strValue += L" from ";
-      strValue += wmi_class;
+template <class T>
+constexpr T get_range_hight()
+{
+    assert(1);
+    return T();
+}
 
-      IEnumWbemClassObject_BIPC * pEnumObject  = 0;
+template <>
+constexpr char get_range_low<char>()
+{
+    return CHAR_MIN;
+}
+template <>
+constexpr char get_range_hight<char>()
+{
+    return CHAR_MAX;
+}
 
-      if ( 0 != pWbemServices->ExecQuery(
-            (bstr)L"WQL",
-            (bstr)strValue.c_str(),
-            //WBEM_FLAG_RETURN_IMMEDIATELY_BIPC,
-            WBEM_FLAG_RETURN_WHEN_COMPLETE_BIPC | WBEM_FLAG_FORWARD_ONLY_BIPC,
-            0,
-            &pEnumObject
-            )
-         ){
-         return false;
-      }
+template <class T>
+T get_null_value()
+{
+    assert(0);
+    return T();
+}
 
-      com_releaser<IEnumWbemCla
+template <>
+char get_null_value<char>()
+{
+    return 0;
+}
+
+template <>
+unsigned int get_null_value<unsigned int>()
+{
+    return 0;
+}
+
+template <>
+std::string get_null_value<std::string>()
+{
+    return "finish";
+}
+
+#endif // PREDEF_H_INCLUDED
+

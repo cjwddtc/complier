@@ -179,11 +179,18 @@ public:
                 {
                     line++;
                 }
+                result="";
             }
             else
             {
                 a.push_back(*start++);
             }
+        }
+        auto q=finish_map.find(current_state);
+        if(q!=finish_map.end())
+        {
+            result=q->second;
+            fun(gram_tree_node(result,a));
         }
     }
     void write_to_file(std::ostream &file)

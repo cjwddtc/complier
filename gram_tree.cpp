@@ -11,9 +11,13 @@ void gram_tree_node::print(size_t n)
     if(value!="")
         std::cout <<":"<<"value:" << value << std::endl;
     else std::cout << std::endl;
-    for(gram_tree_node *a:son_list)
-    {
-        a->print(n+1);
+    if(son_list.size()!=0){
+        std::cout.write(white,n);
+        std::cout << "sons:" << son_list.size() << std::endl;
+        for(gram_tree_node *a:son_list)
+        {
+            a->print(n+1);
+        }
     }
 }
 

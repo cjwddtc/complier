@@ -2,6 +2,7 @@
 #define PREDEF_H_INCLUDED
 #include <limits.h>
 #include <string>
+#include <assert.h>
 
 template <class T>
 constexpr T get_range_low()

@@ -87,7 +87,6 @@ grammar::grammar(std::istream &file)
     vec.push_back(1);
     auto q=gram_map.insert(make_pair(0,vec));
     make_map(project(0,&(q->second),0));
-    stack_id.push(gram_tree_node("",""));
     stack_state.push(0);
 }
 
@@ -170,9 +169,8 @@ void grammar::next(state_set *ptr,next_map &map_)
 void grammar::read(gram_tree_node c){
     printf("reading:%s|\n",c.type.c_str());
     size_t a=id_m.get_id(c.type);
-    if(stack_id.top().type=="all") stack_id.top().print(0);
-    if(a==0 && stack_id.top().type==""){
-        stack_id.top().print(0);
+    if(stack_id.size()==0 && c.type==""){
+        stack_id.push(c);
         return ;
     }
     op b=map[stack_state.top()][a];
@@ -188,7 +186,7 @@ void grammar::read(gram_tree_node c){
             stack_id.pop();
             stack_state.pop();
         }
-        printf("guiyue:%s\n",d.type.c_str());
+        printf("guiyue:%s,son_size:%d\n",d.type.c_str(),d.son_list.size());
         fflush(stdout);
         read(d);
         if(b.id)

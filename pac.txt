@@ -1,0 +1,100 @@
+all
+	fun_imp
+	declaration ;
+	all fun_imp
+	all declaration ;
+fun_imp
+	declaration_specifiers ptr_declarator { expressions }
+expressions
+	expression
+	expressions expression
+expression
+	;
+	declaration ;
+	dot_expression ;
+	if_expression
+	while_expression
+	{ expressions }
+declaration
+	declaration init_declarator_list
+	declaration_specifiers init_declarator_list
+type_dec
+	type
+	unsigned type
+declaration_specifiers
+	type_dec
+	modifier type_dec
+init_declarator_list
+	init_declarator
+	init_declarator_list , init_declarator
+init_declarator
+	ptr_declarator = compare_expression
+	ptr_declarator
+ptr_declarator
+	fun_array_declarator
+	* fun_array_declarator
+fun_array_declarator
+	id
+	( ptr_declarator )
+	fun_array_declarator ( arg_list )
+	fun_array_declarator ( )
+	fun_array_declarator [ num ]
+	fun_array_declarator [ ]
+arg_list
+	declaration_specifiers init_declarator
+	arg_list , declaration_specifiers init_declarator
+primary_expression
+	id
+	num
+	string
+	( expression )
+postfix_expression
+	primary_expression
+	postfix_expression [ expression ]
+	postfix_expression ( )
+	postfix_expression ( argument_expression_list )
+	postfix_expression . IDENTIFIER
+	postfix_expression -> IDENTIFIER
+	postfix_expression 2-self
+argument_expression_list
+	assignment_expression
+	argument_expression_list , assignment_expression
+unary_expression
+	postfix_expression
+	2-self unary_expression
+	unary_operator cast_expression
+unary_operator
+	&
+	*
+cast_expression
+	unary_expression
+	( type_name ) cast_expression
+multiplicative_expression
+	cast_expression
+	multiplicative_expression op2 cast_expression
+	multiplicative_expression * cast_expression
+additive_expression
+	multiplicative_expression
+	additive_expression op1 multiplicative_expression
+move_expression
+	additive_expression
+	move_expression move move_expression
+logic_expression
+	move_expression
+	logic_expression & logic_expression
+	logic_expression | logic_expression
+	logic_expression logic logic_expression
+compare_expression
+	logic_expression
+	compare_expression compare compare_expression
+assign_expression
+	compare_expression
+	assign_expression = assign_expression
+dot_expression
+	assign_expression
+	dot_expression , assign_expression
+if_expression
+	if ( dot_expression ) expression
+	if ( dot_expression ) expression else expression
+while_expression
+	while ( dot_expression ) expression

@@ -1,6 +1,7 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 #include <memory>
+#include <stddef.h>
 
 template <class T>
 class array

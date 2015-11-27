@@ -5,6 +5,7 @@
 #include "map_two.hpp"
 #include "template.hpp"
 #include "gram_tree.h"
+#include "regex.hpp"
 #include <set>
 #include <vector>
 #include <assert.h>
@@ -131,7 +132,7 @@ public:
     dfa(const nfa<char_type> &n)
     {
         current_state=0;
-        make_map(n.start_state);
+        this->make_map(n.start_state);
     }
     dfa(std::istream &file)
     {
@@ -226,6 +227,37 @@ public:
         return a==0;
     }
 };
+
+template <class char_type>
+dfa<char_type> *get_dfa(std::istream &file)
+{
+    std::string str;
+    std::string stri;
+    nfa<char_type> as;
+    while(1)
+    {
+        getline(file,str);
+        auto b=str.begin();
+        regex_node_block<nfa_state<char>> *q=read_regex_string<nfa_state<char>>(b,str.end());
+        //q->print();
+        getline(file,stri);
+        if(stri=="-")
+            q->write_last_name(std::string(str));
+        else
+            q->write_last_name(std::string(stri));
+
+        q->write_to_map(as.start_state);
+
+        //as.print();
+
+        if(file.eof())
+        {
+            break;
+        }
+    }
+     dfa<char_type> * pd=new dfa<char_type>(as);
+     return pd;
+}
 
 
 #endif // DFA_H_INCLUDED

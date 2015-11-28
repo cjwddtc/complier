@@ -21,32 +21,21 @@ bool project::operator<(const project&a) const
     if(pos!=a.pos) return pos<a.pos;
     return fin_id<a.fin_id;
 }
-    void project::print(){
-        printf("%d:",from_id);
-        size_t i=0;
-        for(size_t n:*to_id){
-            if(i++==pos){
-                printf(".");
-            }
-            printf("%d",n);
-        }
-        printf("-%d\n",fin_id);
-    }
-
-id_manager::id_manager():start_id(0){}
-size_t id_manager::get_id(std::string str)
+void project::print()
 {
-    if(name_map.find(str)==name_map.end())
+    printf("%d:",from_id);
+    size_t i=0;
+    for(size_t n:*to_id)
     {
-        name_map.insert(make_pair(str,start_id++));
-        id_map.push_back(str);
+        if(i++==pos)
+        {
+            printf(".");
+        }
+        printf("%d",n);
     }
-    return name_map[str];
+    printf("-%d\n",fin_id);
 }
 
-std::string id_manager::get_name(size_t id){
-    return id_map[id];
-}
 
 grammar::grammar(std::istream &file)
 {
@@ -107,8 +96,7 @@ bool grammar::get_first(size_t id,std::set<size_t> *set) const
                 flag=true;
             else if(it->second.front()==id)
                 break;
-            else
-                if(get_first(it->second.front(),set)) flag=true;
+            else if(get_first(it->second.front(),set)) flag=true;
         }
         return flag;
     }
@@ -159,30 +147,37 @@ void grammar::next(state_set *ptr,next_map &map_)
             b.size=a.to_id->size();
             b.id=a.from_id;
         }
-        else {
+        else
+        {
             size_t b=(*a.to_id)[a.pos];
             map_[b].insert(a.next());
         }
     }
 }
 
-void grammar::read(gram_tree_node c){
+void grammar::read(gram_tree_node c)
+{
     printf("reading:%s|\n",c.type.c_str());
     size_t a=id_m.get_id(c.type);
-    if(stack_id.size()==0 && c.type==""){
+    if(stack_id.size()==0 && c.type=="")
+    {
         stack_id.push(c);
         return ;
     }
     op b=map[stack_state.top()][a];
-    if(b.type==1){
+    if(b.type==1)
+    {
         printf("in:%s\n",c.type.c_str());
         stack_state.push(b.size);
         stack_id.push(c);
-    }else if(b.type==0){
+    }
+    else if(b.type==0)
+    {
         gram_tree_node d(id_m.get_name(b.id),"");
-        for(size_t i=0;i<b.size;i++){
+        for(size_t i=0; i<b.size; i++)
+        {
             printf("out:%s\n",stack_id.top().type.c_str());
-            d.son_list.push_front(new gram_tree_node(stack_id.top()));
+            d.son_list.push_front(stack_id.top());
             stack_id.pop();
             stack_state.pop();
         }
@@ -191,17 +186,23 @@ void grammar::read(gram_tree_node c){
         read(d);
         if(b.id)
             read(c);
-    }else if(b.type==255){
+    }
+    else if(b.type==255)
+    {
         std::cout << "wrong!\n";
-        while(!stack_id.empty()){
+        while(!stack_id.empty())
+        {
             std::cout << stack_id.top().type << ":" << stack_state.top() << std::endl;
             stack_id.pop();
             stack_state.pop();
         }
         throw a;
-    }else{
+    }
+    else
+    {
         std::cout << "wrong!\n";
-        while(!stack_id.empty()){
+        while(!stack_id.empty())
+        {
             std::cout << stack_id.top().type << ":" << stack_state.top() << std::endl;
             stack_id.pop();
             stack_state.pop();
@@ -230,4 +231,4 @@ void grammar::add_state(size_t n,state_set *ptr)
     }
 }
 
-op::op():type(-1){}
+op::op():type(-1) {}

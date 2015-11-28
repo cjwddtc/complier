@@ -15,6 +15,7 @@ expression
 	if_expression
 	while_expression
 	{ expressions }
+	return dot_expression ;
 declaration
 	declaration init_declarator_list
 	declaration_specifiers init_declarator_list
@@ -78,18 +79,18 @@ additive_expression
 	additive_expression op1 multiplicative_expression
 move_expression
 	additive_expression
-	move_expression move move_expression
+	move_expression move additive_expression
 logic_expression
 	move_expression
-	logic_expression & logic_expression
-	logic_expression | logic_expression
-	logic_expression logic logic_expression
+	logic_expression & move_expression
+	logic_expression | move_expression
+	logic_expression logic move_expression
 compare_expression
 	logic_expression
-	compare_expression compare compare_expression
+	compare_expression compare logic_expression
 assign_expression
 	compare_expression
-	assign_expression = assign_expression
+	assign_expression = compare_expression
 dot_expression
 	assign_expression
 	dot_expression , assign_expression

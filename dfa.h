@@ -122,7 +122,8 @@ public:
             if(d->name=="id" && finish_map[n]=="")
             {
                 finish_map[n]=d->name;
-            }else if(d->name!="")
+            }
+            else if(d->name!="")
             {
                 finish_map[n]=d->name;
                 break;
@@ -255,8 +256,8 @@ dfa<char_type> *get_dfa(std::istream &file)
             break;
         }
     }
-     dfa<char_type> * pd=new dfa<char_type>(as);
-     return pd;
+    dfa<char_type> * pd=new dfa<char_type>(as);
+    return pd;
 }
 
 

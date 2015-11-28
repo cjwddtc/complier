@@ -21,15 +21,6 @@ public:
     void print();
 };
 
-class id_manager{
-    std::map<std::string,size_t> name_map;
-    std::vector<std::string> id_map;
-public:
-    size_t start_id;
-    size_t get_id(std::string str);
-    std::string get_name(size_t id);
-    id_manager();
-};
 
 class op
 {

@@ -39,6 +39,9 @@ int main()
     gram_tree_node::fun_array.resize(b.id_m.start_id+1);
     reg_fun();
     assert(*gram_tree_node::add_fun("all")!=0);
+    //freopen("D:\\out.txt","w",stdout);
+    //b.stack_id.top().son_list.front().print();
+    //getchar();
     b.stack_id.top().son_list.front().write_to_list(it);
     size_t i=0;
     for(code_line &a:li)
@@ -70,6 +73,15 @@ int main()
             break;
         case if_goto_:
             std::cout << a.index << ":if"<< a.value.var[0] << "goto" << a.value.pos->index+1 << endl;
+            break;
+        case arg_:
+            std::cout << a.index << ":arg"<< a.value.var[0] << endl;
+            break;
+        case ret_:
+            std::cout << a.index << ":ret"<< a.value.var[0] << endl;
+            break;
+        case call_:
+            std::cout << a.index << ":call"<< a.value.pos->index+1 << endl;
             break;
         }
     }

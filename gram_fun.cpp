@@ -36,7 +36,9 @@ void reg_fun()
         b=&b->son_list.back();
         {
             auto a=b->son_list.begin();
-            fun_map[a->value]=((lsy_it *)&pos)->get_ptr();
+            assert(a->son_list.front().type=="id");
+            std::string str=a->son_list.front().value;
+            fun_map[str]=((lsy_it *)&pos)->get_ptr();
             if(++a==b->son_list.end()) throw ptr;
             if(a->type!="(") throw ptr;
             ++a;
@@ -47,8 +49,6 @@ void reg_fun()
         }
         ++a;
         ++a;
-        code_line c(pop_pos_);
-        pos=c;
         pos=a->write_to_list(pos);
         return pos;
     };
@@ -65,7 +65,7 @@ void reg_fun()
         gram_tree_node &c=a->son_list.front().son_list.back();
         if(c.son_list.front().type=="id")
         {
-            code_line b(pop_);
+            code_line b(arg_);
             b.value.var[0]=symbol_map.get_id(c.son_list.front().value);
             pos=b;
             return pos;
@@ -95,7 +95,7 @@ void reg_fun()
         {
             ++a;
             pos=a->write_to_list(pos);
-            code_line c(push_);
+            code_line c(ret_);
             c.value.var[0]=symbol_map.get_front_id();
             pos=c;
             return pos;
@@ -241,6 +241,33 @@ void reg_fun()
     {
         assert(ptr->son_list.size()==1);
         return ptr->son_list.back().write_to_list(pos);
+    };
+    *gram_tree_node::add_fun("fun_call_expression")=[](gram_tree_node::code_pos &pos,gram_tree_node *ptr)->gram_tree_node::code_pos &
+    {
+        auto a=ptr->son_list.begin();
+        if(a->type=="unary_expression") return a->write_to_list(pos);
+        std::string str=a->value;
+        ++a;
+        ++a;
+        pos=a->write_to_list(pos);
+        code_line b(call_);
+        b.value.pos=fun_map[str];
+        pos=b;
+        return pos;
+    };
+    *gram_tree_node::add_fun("call_arg_list")=[](gram_tree_node::code_pos &pos,gram_tree_node *ptr)->gram_tree_node::code_pos &
+    {
+        if(ptr->son_list.size()==1);{
+            pos=ptr->son_list.back().write_to_list(pos);
+            code_line a(arg_);
+            a.value.var[0]=symbol_map.get_front_id();
+            pos=a;
+        }
+        auto a=ptr->son_list.begin();
+        std::string str=a->value;
+        ++a;
+        ++a;
+        return a->write_to_list(pos);
     };
     *gram_tree_node::add_fun("unary_expression")=[](gram_tree_node::code_pos &pos,gram_tree_node *ptr)->gram_tree_node::code_pos &
     {

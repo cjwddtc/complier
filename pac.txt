@@ -67,8 +67,15 @@ unary_expression
 unary_operator
 	&
 	*
-cast_expression
+call_arg_list
+	dot_expression
+	call_arg_list , dot_expression
+fun_call_expression
 	unary_expression
+	id ( call_arg_list )
+	id ( )
+cast_expression
+	fun_call_expression
 	( type_name ) cast_expression
 multiplicative_expression
 	cast_expression

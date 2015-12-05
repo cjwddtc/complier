@@ -6,7 +6,7 @@
 #include <vector>
 #include "id_manager.h"
 
-enum op_type {add_,or_,and_, minus_,assign_,call_,arg_,ret_,multiply_,divide_,compare_,greater_,greater_equal_,not_,goto_,if_goto_,push_,pop_,push_pos_,pop_pos_};
+enum op_type {add_,or_,and_, minus_,assign_,call_,arg_,ret_,multiply_,divide_,compare_,greater_,greater_equal_,not_,goto_,if_goto_,};
 
 
 class code_line

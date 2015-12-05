@@ -1,3 +1,7 @@
+int asd(int q){
+	t=q;
+	return t;
+}
 int main(){
 while(a)
 if(a==b){
@@ -5,4 +9,5 @@ if(a==b){
 }else{
 	c=d;
 }
+asd(c);
 }

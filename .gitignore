@@ -12,3 +12,5 @@ obj\
 *.sublime-project
 *.note
 *.sublime-workspace
+.idea
+cmake-build-debug/

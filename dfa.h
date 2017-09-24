@@ -74,19 +74,21 @@ void nfa<char_type>::print()
 template <class char_type>
 class dfa:public state_to_map<nfa_state<char_type>*,char_type>
 {
+    using state_to_map<nfa_state<char_type>*,char_type>::make_map;
 public:
     typedef char_type type_code;
     typedef typename state_to_map<nfa_state<char_type>*,char_type>::state_set state_set;
+    typedef typename state_to_map<nfa_state<char_type>*,char_type>::state_set_ptr state_set_ptr;
     typedef typename state_to_map<nfa_state<char_type>*,char_type>::next_map next_map;
     size_t current_state;
     std::string result;
     //finish state map
     std::map<size_t,std::string> finish_map;
     std::vector<state_line<size_t,char_type>> state_map;
-    virtual void expand(nfa_state<char_type> *one,state_set *ptr)
+    virtual void expand(nfa_state<char_type> *one,state_set_ptr ptr)
     {
-        auto b=one->edge.find(get_null_value<char_type>());
-        while(b!=one->edge.end() && b->first==get_null_value<char_type>())
+        auto b=one->edge.find(0);
+        while(b!=one->edge.end() && b->first==0)
         {
             if(ptr->find(b->second)==ptr->end())
             {
@@ -96,21 +98,24 @@ public:
             ++b;
         }
     }
-    virtual void next(state_set *ptr,next_map &map)
+    virtual void next(state_set_ptr ptr,next_map &map)
     {
         for(nfa_state<char_type> *b:*ptr)
         {
             for(auto a:b->edge)
             {
-                map[a.first].insert(a.second);
+                if(map.find(a.first)==map.end()){
+                    map.emplace(std::make_pair(a.first, std::make_shared<state_set>()));
+                }
+                map[a.first]->insert(a.second);
             }
         }
     }
-    virtual void link(state_set *from_set,state_set *to_set,char_type ch)
+    virtual void link(state_set_ptr from_set,state_set_ptr to_set,char_type ch)
     {
         state_map[this->get_id(from_set)][ch]=this->get_id(to_set);
     }
-    virtual void add_state(size_t n,state_set *ptr)
+    virtual void add_state(size_t n,state_set_ptr ptr)
     {
         if(state_map.size()!=n)
         {
@@ -133,7 +138,7 @@ public:
     dfa(const nfa<char_type> &n)
     {
         current_state=0;
-        this->make_map(n.start_state);
+        make_map(n.start_state);
     }
     dfa(std::istream &file)
     {
@@ -238,10 +243,18 @@ dfa<char_type> *get_dfa(std::istream &file)
     while(1)
     {
         getline(file,str);
+        if(str.back()=='\r'){
+            str.pop_back();
+        }
+        if(str.empty()){
+            break;
+        }
         auto b=str.begin();
         regex_node_block<nfa_state<char>> *q=read_regex_string<nfa_state<char>>(b,str.end());
-        //q->print();
         getline(file,stri);
+        if(stri.back()=='\r'){
+            stri.pop_back();
+        }
         if(stri=="-")
             q->write_last_name(std::string(str));
         else

@@ -46,13 +46,16 @@ grammar::grammar(std::istream &file)
     while(!file.eof())
     {
         std::getline(file,str);
+        while(!isprint(str.back())){
+            str.pop_back();
+        }
         if(str[0]=='\t')
         {
             size_t n=1;
             size_t m=1;
             while(true)
             {
-                m=str.find_first_of(" \n",n);
+                m=str.find_first_of(" ",n);
                 if(m==std::string::npos)
                 {
                     b.push_back(id_m.get_id(str.substr(n)));
@@ -102,7 +105,7 @@ bool grammar::get_first(size_t id,std::set<size_t> *set) const
     }
 }
 
-void grammar::expand(state_type type,state_set *ptr)
+void grammar::expand(state_type type,state_set_ptr ptr)
 {
     if(type.pos!=type.to_id->size())
     {
@@ -136,13 +139,13 @@ void grammar::expand(state_type type,state_set *ptr)
     }
 }
 
-void grammar::next(state_set *ptr,next_map &map_)
+void grammar::next(state_set_ptr ptr,next_map &map_)
 {
     for(const state_type &a:*ptr)
     {
         if(a.to_id->size()==a.pos)
         {
-            op &b=map[this->get_id(ptr)][a.fin_id];
+            op &b=map[get_id(ptr)][a.fin_id];
             b.type=0;
             b.size=a.to_id->size();
             b.id=a.from_id;
@@ -150,14 +153,18 @@ void grammar::next(state_set *ptr,next_map &map_)
         else
         {
             size_t b=(*a.to_id)[a.pos];
-            map_[b].insert(a.next());
+            if(map_.find(b)==map_.end())
+            {
+                map_.emplace(std::make_pair(b,std::make_shared<state_set>()));
+            }
+            map_[b]->insert(a.next());
         }
     }
 }
 
 void grammar::read(gram_tree_node c)
 {
-    printf("reading:%s|\n",c.type.c_str());
+    printf("reading:%s|%d\n",c.type.c_str(),stack_id.size());
     size_t a=id_m.get_id(c.type);
     if(stack_id.size()==0 && c.type=="")
     {
@@ -212,14 +219,15 @@ void grammar::read(gram_tree_node c)
 }
 
 
-void grammar::link(state_set *from_set,state_set *to_set,input_type input)
+void grammar::link(state_set_ptr from_set,state_set_ptr to_set,input_type input)
 {
-    op &b=map[this->get_id(from_set)][input];
+    op &b=map[get_id(from_set)][input];
     b.type=1;
-    b.size=this->get_id(to_set);
+    //printf("%d,%d,%d\n",get_id(from_set),get_id(to_set),b.type);
+    b.size=get_id(to_set);
 }
 
-void grammar::add_state(size_t n,state_set *ptr)
+void grammar::add_state(size_t n,state_set_ptr ptr)
 {
     if(map.size()!=n)
     {
@@ -227,8 +235,8 @@ void grammar::add_state(size_t n,state_set *ptr)
     }
     else
     {
-        map.push_back(array<op>(id_m.start_id));
+        map.push_back(std::vector<op>(id_m.start_id));
     }
 }
 
-op::op():type(-1) {}
+op::op():type(255) {}

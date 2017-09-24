@@ -1,4 +1,5 @@
 #include "id_manager.h"
+#include <string>
 id_manager::id_manager():start_id(0),last_id(0) {}
 size_t id_manager::get_id(std::string str)
 {

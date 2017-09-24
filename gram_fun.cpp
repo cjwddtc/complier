@@ -285,13 +285,18 @@ void reg_fun()
     };
     *gram_tree_node::add_fun("primary_expression")=[](gram_tree_node::code_pos &pos,gram_tree_node *ptr)->gram_tree_node::code_pos &
     {
-        if(ptr->son_list.front().type!="id")
+        std::string str= ptr->son_list.front().type;
+        if(str=="id")
         {
-            std::cout << ptr->son_list.front().type << std::endl;
-            assert(0);
+            symbol_map.get_id(ptr->son_list.front().value);
+            return pos;
+        }else if(str=="num")
+        {
+            symbol_map.get_id(ptr->son_list.front().value);
+            return pos;
         }
-        symbol_map.get_id(ptr->son_list.front().value);
-        return pos;
+        std::cout << ptr->son_list.front().type << std::endl;
+        assert(0);
     };
     *gram_tree_node::add_fun("declaration")=[](gram_tree_node::code_pos &pos,gram_tree_node *ptr)->gram_tree_node::code_pos &
     {

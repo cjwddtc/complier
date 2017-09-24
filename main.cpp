@@ -15,33 +15,26 @@
 using std::string;
 using std::cout;
 using std::endl;
+using std::bind;
 
 int main()
 {
-
     std::ifstream fileo("regex.txt",std::ios_base::in);
     std::ifstream filei("in.txt",std::ios_base::in);
     dfa<char> *a=get_dfa<char>(fileo);
-    //freopen("D:\\asd.log","w",stdout);
-    std::cout << "hang:" << a->state_map.size() << std::endl;/*
-    a->read(std::istreambuf_iterator<char>(filei),std::istreambuf_iterator<char>(),
-            [](auto a)
-    {
-        printf("%s:%s\n",a.type.c_str(),a.value.c_str());
-    });*/
+    //freopen("asd.log","w",stdout);
     std::ifstream c("pac.txt");
     grammar b(c);
     a->read(std::istreambuf_iterator<char>(filei),std::istreambuf_iterator<char>(),bind(&grammar::read,&b,std::placeholders::_1));
-    b.read(gram_tree_node("",""));
+    //b.read(gram_tree_node("",""));
     std::list<code_line> li;
     std::insert_iterator<std::list<code_line>> it(li,li.begin());
     gram_tree_node::id_m=&b.id_m;
-    gram_tree_node::fun_array.resize(b.id_m.start_id+1);
+    gram_tree_node::fun_array. (b.id_m.start_id+1);
     reg_fun();
     assert(*gram_tree_node::add_fun("all")!=0);
     //freopen("D:\\out.txt","w",stdout);
-    //b.stack_id.top().son_list.front().print();
-    //getchar();
+           //getchar();
     b.stack_id.top().son_list.front().write_to_list(it);
     size_t i=0;
     for(code_line &a:li)

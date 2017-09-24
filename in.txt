@@ -1,5 +1,6 @@
 int asd(int q){
 	t=q;
+	t=-55.4123;
 	return t;
 }
 int main(){

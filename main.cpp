@@ -30,7 +30,7 @@ int main()
     std::list<code_line> li;
     std::insert_iterator<std::list<code_line>> it(li,li.begin());
     gram_tree_node::id_m=&b.id_m;
-    gram_tree_node::fun_array. (b.id_m.start_id+1);
+    gram_tree_node::fun_array.resize(b.id_m.start_id+1);
     reg_fun();
     assert(*gram_tree_node::add_fun("all")!=0);
     //freopen("D:\\out.txt","w",stdout);
@@ -55,11 +55,11 @@ int main()
         case greater_:
         case greater_equal_:
         case compare_:
-            std::cout << a.index << ":" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << "|" << a.value.var[2] << endl;
+            std::cout  << a.index << ":two:" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << "|" << a.value.var[2] << endl;
             break;
         case not_:
         case assign_:
-            std::cout << a.index << ":" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << endl;
+            std::cout << a.index << ":one" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << endl;
             break;
         case goto_:
             std::cout << a.index << ":goto" << a.value.pos->index+1 << endl;

@@ -344,7 +344,7 @@ void reg_fun()
         size_t t1=symbol_map.get_front_id();
         code_line c(not_);
         c.value.var[0]=symbol_map.get_new_id();
-        c.value.var[0]=t1;
+        c.value.var[1]=t1;
         pos=c;
         code_line *pi=((lsy_it*)&pos)->get_ptr();
         code_line d(if_goto_);

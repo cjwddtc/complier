@@ -12,7 +12,7 @@ enum op_type {add_,or_,and_, minus_,assign_,call_,arg_,ret_,multiply_,divide_,co
 class code_line
 {
 public:
-    typedef std::insert_iterator<std::list<code_line>> code_pos;
+    typedef std::insert_iterator<std::list<code_line> > code_pos;
     enum op_type op;
     struct VALUE
     {
@@ -25,7 +25,7 @@ public:
     //void print();
 };
 
-class lsy_it:public std::insert_iterator<std::list<code_line>>
+class lsy_it:public std::insert_iterator<std::list<code_line> >
 {
 public:
     code_line *get_ptr();
@@ -40,7 +40,7 @@ public:
     gram_tree_node(std::string type_,std::string value_);
     gram_tree_node(const gram_tree_node&a);
     void print(size_t n=0);
-    typedef std::insert_iterator<std::list<code_line>> code_pos;
+    typedef std::insert_iterator<std::list<code_line> > code_pos;
     code_pos &write_to_list(code_pos &it);
     typedef code_pos &(*fun_ptr)(code_pos &,gram_tree_node *);
     static std::vector<fun_ptr> fun_array;

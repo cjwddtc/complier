@@ -30,7 +30,7 @@ int main()
     std::list<code_line> li;
     std::insert_iterator<std::list<code_line>> it(li,li.begin());
     gram_tree_node::id_m=&b.id_m;
-    gram_tree_node::fun_array. (b.id_m.start_id+1);
+    gram_tree_node::fun_array.resize(b.id_m.start_id+1);
     reg_fun();
     assert(*gram_tree_node::add_fun("all")!=0);
     //freopen("D:\\out.txt","w",stdout);

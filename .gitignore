@@ -11,4 +11,5 @@ obj\
 *.depend
 *.sublime-project
 *.note
-*.sublime-workspace
+*.sublime-workspacebuild
+build

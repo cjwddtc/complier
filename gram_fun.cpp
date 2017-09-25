@@ -257,7 +257,7 @@ void reg_fun()
     };
     *gram_tree_node::add_fun("call_arg_list")=[](gram_tree_node::code_pos &pos,gram_tree_node *ptr)->gram_tree_node::code_pos &
     {
-        if(ptr->son_list.size()==1);{
+        if(ptr->son_list.size()==1){
             pos=ptr->son_list.back().write_to_list(pos);
             code_line a(arg_);
             a.value.var[0]=symbol_map.get_front_id();

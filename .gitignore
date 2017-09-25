@@ -13,3 +13,6 @@ obj\
 *.note
 *.sublime-workspacebuild
 build
+*.sublime-workspace
+.idea
+cmake-build-debug/

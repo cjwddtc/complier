@@ -42,7 +42,6 @@ public:
     }
     void print(std::set<nfa_state<char_type>*> *a)
     {
-        //printf("%p\n",this);
         if(a->find(this)==a->end())
         {
             a->insert(this);
@@ -243,11 +242,11 @@ dfa<char_type> *get_dfa(std::istream &file)
     while(1)
     {
         getline(file,str);
+		if (str.empty()) {
+			break;
+		}
         if(str.back()=='\r'){
             str.pop_back();
-        }
-        if(str.empty()){
-            break;
         }
         auto b=str.begin();
         regex_node_block<nfa_state<char>> *q=read_regex_string<nfa_state<char>>(b,str.end());

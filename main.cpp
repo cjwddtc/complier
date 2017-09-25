@@ -16,9 +16,9 @@ using std::string;
 using std::cout;
 using std::endl;
 using std::bind;
-
 int main()
 {
+	fclose(fopen("lsyqwertyuiop", "w"));
     std::ifstream fileo("regex.txt",std::ios_base::in);
     std::ifstream filei("in.txt",std::ios_base::in);
     dfa<char> *a=get_dfa<char>(fileo);
@@ -26,7 +26,7 @@ int main()
     std::ifstream c("pac.txt");
     grammar b(c);
     a->read(std::istreambuf_iterator<char>(filei),std::istreambuf_iterator<char>(),bind(&grammar::read,&b,std::placeholders::_1));
-    //b.read(gram_tree_node("",""));
+    b.read(gram_tree_node("",""));
     std::list<code_line> li;
     std::insert_iterator<std::list<code_line>> it(li,li.begin());
     gram_tree_node::id_m=&b.id_m;
@@ -55,11 +55,11 @@ int main()
         case greater_:
         case greater_equal_:
         case compare_:
-            std::cout << a.index << ":" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << "|" << a.value.var[2] << endl;
+            std::cout  << a.index << ":two:" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << "|" << a.value.var[2] << endl;
             break;
         case not_:
         case assign_:
-            std::cout << a.index << ":" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << endl;
+            std::cout << a.index << ":one" << a.op << "|" << a.value.var[0] << "|" << a.value.var[1] << endl;
             break;
         case goto_:
             std::cout << a.index << ":goto" << a.value.pos->index+1 << endl;

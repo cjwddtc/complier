@@ -1,4 +1,3 @@
-#define DEBUG_MAP
 #include "yufashu.hpp"
 #include <istream>
 #include <iostream>
@@ -164,6 +163,10 @@ void grammar::next(state_set_ptr ptr,next_map &map_)
 
 void grammar::read(gram_tree_node c)
 {
+	if (c.type == "null")
+	{
+		return;
+	}
     printf("reading:%s|%d\n",c.type.c_str(),stack_id.size());
     size_t a=id_m.get_id(c.type);
     if(stack_id.size()==0 && c.type=="")
@@ -235,7 +238,7 @@ void grammar::add_state(size_t n,state_set_ptr ptr)
     }
     else
     {
-        map.push_back(std::vector<op>(id_m.start_id));
+        map.push_back(std::vector<op>(id_m.start_id+1));
     }
 }
 

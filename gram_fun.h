@@ -1,1 +1,0 @@
-void reg_fun();

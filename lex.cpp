@@ -22,7 +22,7 @@ constexpr auto _or(auto a, auto b)
 	return std::make_tuple(
 			std::get<0>(a)+std::get<0>(b),
 			std::get<1>(a)+std::get<1>(b)+1,
-			[a=std::get<2>(a),b=std::get<2>(a)](uint16_t sta,uint16_t &id, auto &edges,auto &zero_edges) {
+			[a=std::get<2>(a),b=std::get<2>(b)](uint16_t sta,uint16_t &id, auto &edges,auto &zero_edges) {
 		auto i=b(sta,id,edges,zero_edges);
 		zero_edges.second[zero_edges.first].first=a(sta,id,edges,zero_edges);
 		zero_edges.second[zero_edges.first].second=i;
@@ -38,7 +38,7 @@ constexpr auto _str(uint64_t str)
 		uint8_t *p=(uint8_t *)&str;
 		for(int i=7;i>=0;i--){
 			edges[sta].first=id;
-			edges[sta].second=p[i];
+			edges[sta].second=str&(0xff<<i)>>i;
 			sta = id++;
 		}
 		return sta;
@@ -49,7 +49,7 @@ constexpr auto _str(uint64_t str)
 //from a to b
 constexpr auto _range(char a,char b)
 {
-	return std::make_tuple(1,0,[a,b](uint16_t sta,uint16_t &id, auto &edges,auto &zero_edges) {
+	return std::make_tuple(b-a+1,(b-a)*2,[a,b](uint16_t sta,uint16_t &id, auto &edges,auto &zero_edges) {
 		for(char i=a;i!=b;i++)
 		{
 			edges[sta].first=id;
@@ -113,23 +113,25 @@ constexpr auto zi(auto a)
 	});
 }
 
-constexpr auto sort(auto array,auto com)
+constexpr void sort(auto &array,auto com,auto assign)
 {
-	decltype(array) new_array;
 	for(int i=0;i<array.size();i++)
 	{
-		//new_array[i]=array[i]
-		new_array[i].first=array[i].first;
-		new_array[i].second=array[i].second;
 		for(int j=i+1;j<array.size();j++)
 		{
-			if(com(array[j],new_array[i]))
+			if(com(array[j],array[i]))
 			{
-				new_array[i]=array[j];
+				auto tmp=array[j];
+				assign(array[j],array[i]);
+				assign(array[i],tmp);
 			}
 		}
 	}
-	return new_array;
+}
+
+constexpr auto insert(auto array,auto num)
+{
+	
 }
 
 constexpr auto extend(auto e,auto ze)
@@ -144,24 +146,27 @@ constexpr auto run(auto b){
 	std::pair<uint32_t,std::array<std::pair<uint16_t,uint16_t>,std::get<1>(a)>> zero_edges; 
 	uint16_t id=1;
 	std::get<2>(a)(0,id,edges,zero_edges);
+	sort(zero_edges.second,[](auto a,auto b){
+		return a.first<b.first;
+	},[](auto &a,auto &b){
+		a.first=b.first;
+		a.second=b.second;
+	});
 	return zero_edges.second;
 	/*sort(zero_edges.second,[](auto a,auto b){
 		return a.first<b.first;
 	});*/
 }
 
-constexpr auto nfa_to_dfa(auto a,auto b)
-{
-	
-}
-
 int main()
 {
 	//constexpr auto r=_or(_ch('a'),str('bqwe'));
-	constexpr auto w=[](){return _or(_ch('a'),_str('zxcb'));};
+	constexpr auto w=[](){return _or(_or(_ch('a'),_str('zxcb')),_str('asdq'));};
+	printf("%d\n",1);
 	constexpr auto q= run(w);
 	for(int i=0;i<q.size();i++)
 		printf("%d,%d\n",q[i].first,q[i].second);
+	printf("%d",q.size());
 	//std::array<int,q> a;
 	//constexpr auto q=qqq();
 	//std::array<int,q> b;

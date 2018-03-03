@@ -1,10 +1,9 @@
-#define DEBUG_MAP
 #include "yufashu.hpp"
 #include <istream>
 #include <iostream>
 
 
-project::project(size_t id_,const std::vector<size_t> *to_id_,size_t fin_id_,size_t pos_):
+project::project(input_type id_,const std::vector<input_type> &to_id_, input_type fin_id_,size_t pos_):
     from_id(id_),to_id(to_id_),fin_id(fin_id_),pos(pos_) {}
 
 
@@ -21,11 +20,12 @@ bool project::operator<(const project&a) const
     if(pos!=a.pos) return pos<a.pos;
     return fin_id<a.fin_id;
 }
+/*
 void project::print()
 {
     printf("%d:",from_id);
     size_t i=0;
-    for(size_t n:*to_id)
+    for(std::string_t n:*to_id)
     {
         if(i++==pos)
         {
@@ -34,15 +34,14 @@ void project::print()
         printf("%d",n);
     }
     printf("-%d\n",fin_id);
-}
+}*/
 
 
 grammar::grammar(std::istream &file)
 {
     std::string str;
-    size_t a;
-    std::vector<size_t> b;
-    id_m.get_id("");
+    input_type a;
+    std::vector<input_type> b;
     while(!file.eof())
     {
         std::getline(file,str);
@@ -55,12 +54,12 @@ grammar::grammar(std::istream &file)
                 m=str.find_first_of(" \n",n);
                 if(m==std::string::npos)
                 {
-                    b.push_back(id_m.get_id(str.substr(n)));
+                    b.push_back(str.substr(n));
                     break;
                 }
                 else
                 {
-                    b.push_back(id_m.get_id(str.substr(n,m-n)));
+                    b.push_back(str.substr(n,m-n));
                     n=++m;
                 }
             }
@@ -69,66 +68,60 @@ grammar::grammar(std::istream &file)
         }
         else
         {
-            a=id_m.get_id(str);
+            a=str;
         }
-    }
-    std::vector<size_t> vec;
+    }/*
+    std::vector<std::string> vec;
     vec.push_back(1);
     auto q=gram_map.insert(make_pair(0,vec));
-    make_map(project(0,&(q->second),0));
-    stack_state.push(0);
+    make_map(project("document",&(q->second),0));
+    stack_state.push(0);*/
 }
 
-bool grammar::get_first(size_t id,std::set<size_t> *set) const
+void grammar::get_first(std::string name,std::set<std::string> &set)
 {
-    if(gram_map.find(id)==gram_map.end())
+    if(gram_map.find(name)==gram_map.end())
     {
-        set->insert(id);
-        return false;
+        set.insert(name);
     }
     else
     {
-        auto itp=gram_map.equal_range(id);
+        auto itp=gram_map.equal_range(name);
         bool flag=true;
         for(auto it=itp.first; it!=itp.second; it++)
         {
-            if(it->second.size()==0)
-                flag=true;
-            else if(it->second.front()==id)
-                break;
-            else if(get_first(it->second.front(),set)) flag=true;
+			if (it->second.front() == name) {
+				break;
+			}
+			else {
+				get_first(it->second.front(), set);
+			}
         }
-        return flag;
     }
 }
 
-void grammar::expand(state_type type,state_set *ptr)
+void grammar::expand(state_type type,state_set &ptr)
 {
-    if(type.pos!=type.to_id->size())
+    if(type.pos!=type.to_id.size())
     {
-        input_type other=(*type.to_id)[type.pos];
+        input_type other=type.to_id[type.pos];
         auto itp=gram_map.equal_range(other);
-        //printf("search:%d\n",other);
         std::set<input_type> set;
-        if(type.pos+1==type.to_id->size() || get_first((*type.to_id)[type.pos+1],&set))
+        if(type.pos+1==type.to_id.size())
         {
             set.insert(type.fin_id);
-        }
+		}
+		else {
+			get_first(type.to_id[type.pos + 1],set);
+		}
         for(auto it=itp.first; it!=itp.second; it++)
         {
-            for(size_t id:set)
+            for(const std::string &id:set)
             {
-                /*printf("%d:\n",it->first);
-                for(size_t n:(it->second)){
-                    printf("%d ",n);
-                }
-                printf("\n");*/
-                project prd(it->first,&(it->second),id);
-                if(ptr->find(prd)==ptr->end())
+                project prd(it->first,it->second,id);
+                if(ptr.find(prd)==ptr.end())
                 {
-//                    printf("insert:\n");
-//                    prd.print();
-                    ptr->insert(prd);
+                    ptr.insert(prd);
                     expand(prd,ptr);
                 }
             }
@@ -136,25 +129,25 @@ void grammar::expand(state_type type,state_set *ptr)
     }
 }
 
-void grammar::next(state_set *ptr,next_map &map_)
+void grammar::next(state_set &ptr,next_map &map_)
 {
-    for(const state_type &a:*ptr)
+    for(const state_type &a:ptr)
     {
-        if(a.to_id->size()==a.pos)
+        if(a.to_id.size()==a.pos)
         {
-            op &b=map[this->get_id(ptr)][a.fin_id];
-            b.type=0;
-            b.size=a.to_id->size();
-            b.id=a.from_id;
+			specification s;
+			s.name = a.from_id;
+			s.size = a.to_id.size();
+			map[this->get_id(ptr)][a.fin_id] = s;
         }
         else
         {
-            size_t b=(*a.to_id)[a.pos];
+            auto b=a.to_id[a.pos];
             map_[b].insert(a.next());
         }
     }
 }
-
+/*
 void grammar::read(gram_tree_node c)
 {
     printf("reading:%s|\n",c.type.c_str());
@@ -210,16 +203,16 @@ void grammar::read(gram_tree_node c)
         throw b.type;
     }
 }
+*/
 
-
-void grammar::link(state_set *from_set,state_set *to_set,input_type input)
+void grammar::link(state_set &from_set,state_set &to_set,input_type input)
 {
-    op &b=map[this->get_id(from_set)][input];
-    b.type=1;
-    b.size=this->get_id(to_set);
+	shift s;
+	s.state = this->get_id(to_set);
+    map[this->get_id(from_set)][input]=s;
 }
 
-void grammar::add_state(size_t n,state_set *ptr)
+void grammar::add_state(size_t n,state_set &ptr)
 {
     if(map.size()!=n)
     {
@@ -227,8 +220,6 @@ void grammar::add_state(size_t n,state_set *ptr)
     }
     else
     {
-        map.push_back(array<op>(id_m.start_id));
+        map.resize(n+1);
     }
 }
-
-op::op():type(-1) {}

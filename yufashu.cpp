@@ -1,9 +1,9 @@
 #include "yufashu.hpp"
 #include <istream>
 #include <iostream>
+#include <algorithm>
 
-
-project::project(input_type id_,const std::vector<input_type> &to_id_, input_type fin_id_,size_t pos_):
+project::project(input_type id_,const specification_left &to_id_, input_type fin_id_,size_t pos_):
     from_id(id_),to_id(to_id_),fin_id(fin_id_),pos(pos_) {}
 
 
@@ -12,73 +12,72 @@ project project::next() const
     return project(from_id,to_id,fin_id,pos+1);
 }
 
-
-bool project::operator<(const project&a) const
+bool project::operator==(const project &a)const
 {
-    if(this->from_id!=a.from_id) return this->from_id<a.from_id;
-    if(this->to_id!=a.to_id) return this->to_id<a.to_id;
-    if(pos!=a.pos) return pos<a.pos;
-    return fin_id<a.fin_id;
-}
-/*
-void project::print()
-{
-    printf("%d:",from_id);
-    size_t i=0;
-    for(std::string_t n:*to_id)
-    {
-        if(i++==pos)
-        {
-            printf(".");
-        }
-        printf("%d",n);
-    }
-    printf("-%d\n",fin_id);
-}*/
-
-
-grammar::grammar(std::istream &file)
-{
-    std::string str;
-    input_type a;
-    std::vector<input_type> b;
-    while(!file.eof())
-    {
-        std::getline(file,str);
-        if(str[0]=='\t')
-        {
-            size_t n=1;
-            size_t m=1;
-            while(true)
-            {
-                m=str.find_first_of(" \n",n);
-                if(m==std::string::npos)
-                {
-                    b.push_back(str.substr(n));
-                    break;
-                }
-                else
-                {
-                    b.push_back(str.substr(n,m-n));
-                    n=++m;
-                }
-            }
-            gram_map.insert(std::make_pair(a,b));
-            b.clear();
-        }
-        else
-        {
-            a=str;
-        }
-    }/*
-    std::vector<std::string> vec;
-    vec.push_back(1);
-    auto q=gram_map.insert(make_pair(0,vec));
-    make_map(project("document",&(q->second),0));
-    stack_state.push(0);*/
+	return &to_id == &a.to_id&&fin_id == a.fin_id&&pos == a.pos;
 }
 
-void grammar::get_first(std::string name,std::set<std::string> &set)
+namespace std
+{
+	hash<project>::result_type hash<project>::operator()(argument_type const& s) const noexcept
+	{
+		result_type const h2(std::hash<size_t>{}(s.fin_id));
+		result_type const h3(std::hash<const char*>{}((const char *)&s.to_id));
+		result_type const h4(std::hash<size_t>{}(s.pos));
+		return h2^h3^h4;
+	}
+	hash<state_index>::result_type hash<state_index>::operator()(argument_type const& s) const noexcept
+	{
+		result_type const h1(std::hash<size_t>{}(s.first));
+		result_type const h2(std::hash<size_t>{}(s.second));
+		return h1 ^ h2;
+	}
+	hash<state_index>::result_type hash<symbol>::operator()(argument_type const& s) const noexcept
+	{
+		return result_type(std::hash<size_t>{}(s.id));
+	}
+}
+
+grammer_impl::grammer_impl(state_map &&map_) :map(std::move(map_)){
+	stack_state.push_back(0);
+}
+
+void grammer_impl::read_one(unit a)
+{
+	auto it = map.find(std::make_pair(stack_state.back(), a.first));
+	if (it != map.end())
+	{
+		std::visit([this, a](auto arg) {
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, shift>)
+			{
+				stack_symbol.emplace_back(a);
+				stack_state.emplace_back(arg.state);
+			}
+			else if constexpr (std::is_same_v<T, specification>)
+			{
+				if (arg.id != 0)
+				{
+					unit b(arg.id, std::any());
+					arg.func(stack_symbol.end() - arg.size, stack_symbol.end(), b);
+					stack_state.resize(stack_state.size() - arg.size);
+					stack_symbol.resize(stack_symbol.size() - arg.size);
+					//stack_state.erase(stack_state.end() - arg.size, stack_state.end());
+					read_one(b);
+					read_one(a);
+				}
+			}
+			else {
+				assert("this varint must be specification or shift");
+			}
+		}, it->second);
+	}
+	else {
+		throw a;
+	}
+}
+
+void grammer_maker::get_first(input_type name,std::set<input_type> &set)
 {
     if(gram_map.find(name)==gram_map.end())
     {
@@ -90,33 +89,33 @@ void grammar::get_first(std::string name,std::set<std::string> &set)
         bool flag=true;
         for(auto it=itp.first; it!=itp.second; it++)
         {
-			if (it->second.front() == name) {
+			if (it->second.first.front() == name) {
 				break;
 			}
 			else {
-				get_first(it->second.front(), set);
+				get_first(it->second.first.front(), set);
 			}
         }
     }
 }
 
-void grammar::expand(state_type type,state_set &ptr)
+void grammer_maker::expand(state_type type,state_set &ptr)
 {
-    if(type.pos!=type.to_id.size())
+    if(type.pos!=type.to_id.first.size())
     {
-        input_type other=type.to_id[type.pos];
+        input_type other=type.to_id.first[type.pos];
         auto itp=gram_map.equal_range(other);
         std::set<input_type> set;
-        if(type.pos+1==type.to_id.size())
+        if(type.pos+1==type.to_id.first.size())
         {
             set.insert(type.fin_id);
 		}
 		else {
-			get_first(type.to_id[type.pos + 1],set);
+			get_first(type.to_id.first[type.pos + 1],set);
 		}
         for(auto it=itp.first; it!=itp.second; it++)
         {
-            for(const std::string &id:set)
+            for(auto id:set)
             {
                 project prd(it->first,it->second,id);
                 if(ptr.find(prd)==ptr.end())
@@ -129,97 +128,126 @@ void grammar::expand(state_type type,state_set &ptr)
     }
 }
 
-void grammar::next(state_set &ptr,next_map &map_)
+void grammer_maker::next(const state_set &ptr,next_map &map_)
 {
     for(const state_type &a:ptr)
     {
-        if(a.to_id.size()==a.pos)
+        if(a.to_id.first.size()==a.pos)
         {
 			specification s;
-			s.name = a.from_id;
-			s.size = a.to_id.size();
-			map[this->get_id(ptr)][a.fin_id] = s;
+			s.id = a.from_id;
+			s.size = a.to_id.first.size();
+			s.func = a.to_id.second;
+			map[std::make_pair(this->get_id(ptr),a.fin_id)] = s;
         }
         else
         {
-            auto b=a.to_id[a.pos];
+            auto b=a.to_id.first[a.pos];
             map_[b].insert(a.next());
         }
     }
 }
-/*
-void grammar::read(gram_tree_node c)
-{
-    printf("reading:%s|\n",c.type.c_str());
-    size_t a=id_m.get_id(c.type);
-    if(stack_id.size()==0 && c.type=="")
-    {
-        stack_id.push(c);
-        return ;
-    }
-    op b=map[stack_state.top()][a];
-    if(b.type==1)
-    {
-        printf("in:%s\n",c.type.c_str());
-        stack_state.push(b.size);
-        stack_id.push(c);
-    }
-    else if(b.type==0)
-    {
-        gram_tree_node d(id_m.get_name(b.id),"");
-        for(size_t i=0; i<b.size; i++)
-        {
-            printf("out:%s\n",stack_id.top().type.c_str());
-            d.son_list.push_front(stack_id.top());
-            stack_id.pop();
-            stack_state.pop();
-        }
-        printf("guiyue:%s,son_size:%d\n",d.type.c_str(),d.son_list.size());
-        fflush(stdout);
-        read(d);
-        if(b.id)
-            read(c);
-    }
-    else if(b.type==255)
-    {
-        std::cout << "wrong!\n";
-        while(!stack_id.empty())
-        {
-            std::cout << stack_id.top().type << ":" << stack_state.top() << std::endl;
-            stack_id.pop();
-            stack_state.pop();
-        }
-        throw a;
-    }
-    else
-    {
-        std::cout << "wrong!\n";
-        while(!stack_id.empty())
-        {
-            std::cout << stack_id.top().type << ":" << stack_state.top() << std::endl;
-            stack_id.pop();
-            stack_state.pop();
-        }
-        throw b.type;
-    }
-}
-*/
 
-void grammar::link(state_set &from_set,state_set &to_set,input_type input)
+void grammer_maker::link(const state_set &from_set,const state_set &to_set,input_type input)
 {
 	shift s;
 	s.state = this->get_id(to_set);
-    map[this->get_id(from_set)][input]=s;
+    map[std::make_pair(this->get_id(from_set),input)]=s;
 }
 
-void grammar::add_state(size_t n,state_set &ptr)
+void grammer_maker::add_state(size_t n,const state_set &ptr)
 {
-    if(map.size()!=n)
-    {
-        throw n;
-    }
-    else
-    {
-        map.resize(n+1);
-    }
+}
+void grammer_maker::add(input_type a, std::vector<input_type> &&b, specification_handle handler)
+{
+	gram_map.emplace(a, std::make_pair(std::move(b),handler));
+}
+grammer_impl *grammer_maker::make_grammer(input_type root_state)
+{
+	auto b = gram_map.emplace(0, std::make_pair(std::vector<size_t>({ root_state }), [](auto start,auto end, auto &b) {b.second = start->second; }));
+	this->make_map(project(0,b->second,-1));
+	return new grammer_impl(std::move(map));
+}
+thread_local grammer_maker global_grammer_impl;
+thread_local size_t sid = 1;
+
+int main() {
+	symbol a;
+	symbol b;
+	symbol c;
+	symbol d;
+	symbol e;
+	symbol f;
+	specification_handle func = [](auto start, auto b, auto &c) {
+
+	};
+	a = { b,c,d }, func;
+	a = { c,d }, func;
+	a = { b,c,d,f }, func;
+	b = { f }, func;
+	c = { e,f }, func;
+	grammer asd=make_grammer(a);
+	std::vector<unit> vec;
+	vec.push_back(std::make_pair(6, std::any()));
+	vec.push_back(std::make_pair(5, std::any()));
+	vec.push_back(std::make_pair(6, std::any()));
+	vec.push_back(std::make_pair(4, std::any()));
+	asd.read(vec.begin(), vec.end());
+}
+
+symbol::symbol():id(sid++)
+{
+}
+
+binder symbol::operator=(std::initializer_list<symbol> symbols)
+{
+	std::vector<input_type> vec(symbols.size());
+	std::transform(symbols.begin(), symbols.end(), vec.begin(), [](auto a) {return a.id; });
+	return binder(new binder_impl(id,std::move(vec)));
+}
+
+bool symbol::operator==(const symbol &o) const
+{
+	return id==o.id;
+}
+
+binder_impl::binder_impl(input_type id_, std::vector<input_type>&& syms):id(id_), symbols(std::move(syms))
+{
+	
+}
+
+void binder_impl::operator,(specification_handle han)
+{
+	global_grammer_impl.add(id, std::move(symbols), han);
+}
+
+grammer make_grammer(symbol sym)
+{
+	sid = 1;
+	return grammer(global_grammer_impl.make_grammer(sym.id));
+}
+
+
+grammer::grammer(grammer_impl * p):_imp(p)
+{
+
+}
+void grammer::read_one(unit a)
+{
+	_imp->read_one(a);
+}
+
+binder::binder(binder_impl * p):_imp(p)
+{
+
+}
+
+void binder::operator,(specification_handle handle)
+{
+	(*_imp), handle;
+}
+//
+namespace std {
+	template class shared_ptr<binder_impl>;
+	template class shared_ptr<grammer_impl>;
 }

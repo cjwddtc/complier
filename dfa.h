@@ -1,5 +1,4 @@
-#ifndef DFA_H_INCLUDED
-#define DFA_H_INCLUDED
+#pragma once
 #include <map>
 #include "predef.h"
 #include "map_two.hpp"
@@ -12,253 +11,97 @@
 #include <memory>
 #include <iostream>
 #include <iterator>
+#include <optional>
 //#define DEBUG_MAP
 
-template <class char_type>
-class nfa_state;
 
-template <class char_type>
 class nfa
 {
+	typedef std::optional<wchar_t> input_type;
+	typedef std::unordered_multimap<input_type, size_t> edge_map;
+	typedef std::pair<edge_map, std::optional<size_t>> nfa_status;
+
+
+	size_t create_status()
+	{
+		status.push_back(nfa_status());
+		return status.size() - 1;
+	}
+	void set_name(size_t id, size_t name)
+	{
+		status[id].second = name;
+	}
+	void link(size_t from, size_t to, input_type ch=input_type())
+	{
+		status[from].first.emplace(ch, to);
+	}
+protected:
+	std::vector<nfa_status> status;
 public:
-    typedef char_type type_char;
-    nfa_state<char_type>* start_state;
-    std::map<nfa_state<char_type>*,std::string> fin_state;
-    nfa();
-    void print();
+	nfa();
+	void add(std::wstring str,size_t id);
 };
 
-template <class char_type>
-class nfa_state
+
+typedef size_t state_type;
+typedef std::pair<state_type, wchar_t> status_index;
+typedef  wchar_t input_type;
+//ÊµÏÖhashº¯Êý
+namespace std
+{
+	template<> struct hash<status_index>
+	{
+		typedef status_index argument_type;
+		typedef std::size_t result_type;
+		result_type operator()(argument_type const& s) const noexcept;
+	};
+}
+class dfa:public state_to_map<state_type, input_type>,nfa
 {
 public:
-    std::multimap<char_type,nfa_state<char_type> *> edge;
-    typedef char_type type_char;
-    std::string name;
-    nfa_state(std::string name_=""):name(name_) {}
-    void link(char_type ch,nfa_state<char_type> *state)
+	typedef typename state_to_map<state_type, wchar_t>::state_set state_set;
+	typedef typename state_to_map<state_type, wchar_t>::next_map next_map;
+	std::unordered_map<status_index, size_t> status_map;
+	std::unordered_map<state_type, size_t> fin_status;
+    virtual void expand(state_type id,state_set &ptr)
     {
-        edge.insert(std::make_pair(ch,state));
-    }
-    void print(std::set<nfa_state<char_type>*> *a)
-    {
-        //printf("%p\n",this);
-        if(a->find(this)==a->end())
+		auto &stat = status[id].first;
+		auto b = stat.equal_range(std::optional<wchar_t>());
+        while(b.first!=b.second)
         {
-            a->insert(this);
-            for(auto b:edge)
+            if(ptr.find(b.first->second)==ptr.end())
             {
-                printf("%p\t%c\t%p\n",this,b.first,b.second);
-                b.second->print(a);
+				ptr.emplace(b.first->second);
+                expand(b.first->second,ptr);
             }
+            ++b.first;
+        }
+    }
+    virtual void next(const state_set &ptr,next_map &map)
+    {
+        for(size_t b:ptr)
+        {
+            for(auto a: status[b].first)
+            {
+                map[*a.first].insert(a.second);
+            }
+        }
+    }
+
+    virtual void link(const state_set &from_set,const state_set &to_set,wchar_t ch)
+    {
+		status_map[std::make_pair(this->get_id(from_set),ch)]= this->get_id(to_set);
+    }
+    virtual void add_state(size_t n,const state_set &ptr)
+    {
+        for(size_t d:ptr)
+        {
+			if (status[d].second)
+			{
+				fin_status[n] = *status[d].second;
+			}
         }
     }
 };
-template <class char_type>
-using dfa_state=std::set<nfa_state<char_type>*>;
+thread_local dfa f;
 
-template <class char_type>
-nfa<char_type>::nfa()
-{
-    start_state=new nfa_state<char_type>();
-}
-
-
-template <class char_type>
-void nfa<char_type>::print()
-{
-    std::set<nfa_state<char_type>*> a;
-    start_state->print(&a);
-}
-
-template <class char_type>
-class dfa:public state_to_map<nfa_state<char_type>*,char_type>
-{
-public:
-    typedef char_type type_code;
-    typedef typename state_to_map<nfa_state<char_type>*,char_type>::state_set state_set;
-    typedef typename state_to_map<nfa_state<char_type>*,char_type>::next_map next_map;
-    size_t current_state;
-    std::string result;
-    //finish state map
-    std::map<size_t,std::string> finish_map;
-    std::vector<state_line<size_t,char_type>> state_map;
-    virtual void expand(nfa_state<char_type> *one,state_set *ptr)
-    {
-        auto b=one->edge.find(get_null_value<char_type>());
-        while(b!=one->edge.end() && b->first==get_null_value<char_type>())
-        {
-            if(ptr->find(b->second)==ptr->end())
-            {
-                ptr->insert(b->second);
-                expand(b->second,ptr);
-            }
-            ++b;
-        }
-    }
-    virtual void next(state_set *ptr,next_map &map)
-    {
-        for(nfa_state<char_type> *b:*ptr)
-        {
-            for(auto a:b->edge)
-            {
-                map[a.first].insert(a.second);
-            }
-        }
-    }
-    virtual void link(state_set *from_set,state_set *to_set,char_type ch)
-    {
-        state_map[this->get_id(from_set)][ch]=this->get_id(to_set);
-    }
-    virtual void add_state(size_t n,state_set *ptr)
-    {
-        if(state_map.size()!=n)
-        {
-            throw n;
-        }
-        state_map.push_back(state_line<size_t,char_type>());
-        for(nfa_state<char_type>* d:*ptr)
-        {
-            if(d->name=="id" && finish_map[n]=="")
-            {
-                finish_map[n]=d->name;
-            }
-            else if(d->name!="")
-            {
-                finish_map[n]=d->name;
-                break;
-            }
-        }
-    }
-    dfa(const nfa<char_type> &n)
-    {
-        current_state=0;
-        this->make_map(n.start_state);
-    }
-    dfa(std::istream &file)
-    {
-        current_state=0;
-        size_t *ptr=new size_t[get_range_hight<char_type>()-get_range_low<char_type>()];
-        size_t n;
-        file.read((char *)&n,sizeof(n));
-        for(size_t i=0; i<n; i++)
-        {
-            file.read((char *)ptr,get_range_hight<char_type>()-get_range_low<char_type>());
-            //for()
-            state_map.push_back(state_line<size_t,char_type>(ptr));
-        }
-        size_t m;
-        while(!file.eof())
-        {
-            file.read((char *)&m,sizeof(m));
-            std::string str;
-            char ch;
-            while(1)
-            {
-                file.get(ch);
-                if(ch==0)
-                    break;
-                str.push_back(ch);
-            }
-            finish_map[m]=str;
-        }
-    }
-    template <class ITERATOR,class FUNC>
-    void read(ITERATOR start,ITERATOR end,FUNC fun)
-    {
-        std::string a;
-        int line=1;
-        while(start!=end)
-        {
-            if(read(*start))
-            {
-                if(result!="null")
-                {
-                    fun(gram_tree_node(result,a));
-                }
-                a.clear();
-                if(*start=='\n')
-                {
-                    line++;
-                }
-                result="";
-            }
-            else
-            {
-                a.push_back(*start++);
-            }
-        }
-        auto q=finish_map.find(current_state);
-        if(q!=finish_map.end())
-        {
-            result=q->second;
-            fun(gram_tree_node(result,a));
-        }
-    }
-    void write_to_file(std::ostream &file)
-    {
-        size_t n=state_map.size();
-        file.write((const char *)&n,sizeof(n));
-        for(state_line<size_t,char_type> line:state_map)
-        {
-            file.write((const char *)line.ptr.data(),get_range_hight<char_type>()-get_range_low<char_type>());
-        }
-        for(auto it=finish_map.begin(); it!=finish_map.end(); it++)
-        {
-            file.write((const char *)&it->first,sizeof(it->first));
-            file.write(it->second.c_str(),it->second.size()+1);
-        }
-    }
-    bool read(char_type ch)
-    {
-        auto a=state_map[current_state][ch];
-        if(a==0)
-        {
-            auto a=finish_map.find(current_state);
-            if(a!=finish_map.end())
-            {
-                result=a->second;
-            }
-            else
-            {
-                throw a;
-            }
-        }
-        current_state=a;
-        return a==0;
-    }
-};
-
-template <class char_type>
-dfa<char_type> *get_dfa(std::istream &file)
-{
-    std::string str;
-    std::string stri;
-    nfa<char_type> as;
-    while(1)
-    {
-        getline(file,str);
-        auto b=str.begin();
-        regex_node_block<nfa_state<char>> *q=read_regex_string<nfa_state<char>>(b,str.end());
-        //q->print();
-        getline(file,stri);
-        if(stri=="-")
-            q->write_last_name(std::string(str));
-        else
-            q->write_last_name(std::string(stri));
-
-        q->write_to_map(as.start_state);
-
-        //as.print();
-
-        if(file.eof())
-        {
-            break;
-        }
-    }
-    dfa<char_type> * pd=new dfa<char_type>(as);
-    return pd;
-}
-
-
-#endif // DFA_H_INCLUDED

@@ -12,3 +12,4 @@ obj\
 *.sublime-project
 *.note
 *.sublime-workspace
+/.vs

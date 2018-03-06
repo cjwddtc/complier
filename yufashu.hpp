@@ -111,7 +111,7 @@ public:
     virtual void link(const state_set &from_set,const state_set &to_set,input_type input);
     virtual void add_state(size_t n,const state_set &ptr);
 	void add(input_type a,std::vector<input_type> &&b, specification_handle handler);
-	grammer_impl *make_grammer(input_type root_state);
+	grammer_impl *make_grammer(input_type root_state, specification_handle root_handle);
     //void read(gram_tree_node b);
 };
 

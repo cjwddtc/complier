@@ -14,14 +14,16 @@
 #include <optional>
 //#define DEBUG_MAP
 
-
+#include "yufashu.h"
 class nfa
 {
 	typedef std::optional<wchar_t> input_type;
 	typedef std::unordered_multimap<input_type, size_t> edge_map;
 	typedef std::pair<edge_map, std::optional<size_t>> nfa_status;
 
-
+	size_t c_id;
+	std::unordered_map<wchar_t, symbol> id_map;
+	grammer reggm;
 	size_t create_status()
 	{
 		status.push_back(nfa_status());
@@ -56,7 +58,8 @@ namespace std
 		result_type operator()(argument_type const& s) const noexcept;
 	};
 }
-class dfa:public state_to_map<state_type, input_type>,nfa
+
+class dfa_maker:public state_to_map<state_type, input_type>,public nfa
 {
 public:
 	typedef typename state_to_map<state_type, wchar_t>::state_set state_set;
@@ -103,5 +106,11 @@ public:
         }
     }
 };
-thread_local dfa f;
 
+
+struct final_symbol :public symbol
+{
+	final_symbol(std::wstring str);
+};
+
+void 

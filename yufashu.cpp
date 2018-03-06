@@ -39,12 +39,18 @@ namespace std
 }
 
 grammer_impl::grammer_impl(state_map &&map_) :map(std::move(map_)){
+	for (auto a : map)
+	{
+		printf("%lld,%lld\n",a.first.first,a.first.second);
+	}
+	printf("--%d", map.find(state_index(0, 1))==map.end());
 	stack_state.push_back(0);
 }
 
 void grammer_impl::read_one(unit a)
 {
-	auto it = map.find(std::make_pair(stack_state.back(), a.first));
+	printf("%llu", a.first);
+	auto it = map.find(state_index(stack_state.back(), a.first));
 	if (it != map.end())
 	{
 		std::visit([this, a](auto arg) {
@@ -162,16 +168,17 @@ void grammer_maker::add(input_type a, std::vector<input_type> &&b, specification
 {
 	gram_map.emplace(a, std::make_pair(std::move(b),handler));
 }
-grammer_impl *grammer_maker::make_grammer(input_type root_state)
+grammer_impl *grammer_maker::make_grammer(input_type root_state, specification_handle root_handle)
 {
-	auto b = gram_map.emplace(0, std::make_pair(std::vector<size_t>({ root_state }), [](auto start,auto end, auto &b) {b.second = start->second; }));
+	auto b = gram_map.emplace(0, std::make_pair(std::vector<size_t>({ root_state }), root_handle));
 	this->make_map(project(0,b->second,-1));
+	gram_map.clear();
 	return new grammer_impl(std::move(map));
 }
 thread_local grammer_maker global_grammer_impl;
 thread_local size_t sid = 1;
 
-int main() {
+int main_() {
 	symbol a;
 	symbol b;
 	symbol c;
@@ -186,13 +193,14 @@ int main() {
 	a = { b,c,d,f }, func;
 	b = { f }, func;
 	c = { e,f }, func;
-	grammer asd=make_grammer(a);
+	grammer asd = make_grammer(a, [](auto ...arg) {});
 	std::vector<unit> vec;
 	vec.push_back(std::make_pair(6, std::any()));
 	vec.push_back(std::make_pair(5, std::any()));
 	vec.push_back(std::make_pair(6, std::any()));
 	vec.push_back(std::make_pair(4, std::any()));
 	asd.read(vec.begin(), vec.end());
+	return 0;
 }
 
 symbol::symbol():id(sid++)
@@ -221,10 +229,10 @@ void binder_impl::operator,(specification_handle han)
 	global_grammer_impl.add(id, std::move(symbols), han);
 }
 
-grammer make_grammer(symbol sym)
+grammer make_grammer(symbol sym, specification_handle root_handle)
 {
 	sid = 1;
-	return grammer(global_grammer_impl.make_grammer(sym.id));
+	return grammer(global_grammer_impl.make_grammer(sym.id,root_handle));
 }
 
 

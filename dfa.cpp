@@ -1,5 +1,5 @@
 #include "dfa.h"
-#include "yufashu.h"
+#include <algorithm>
 namespace std
 {
 hash<status_index>::result_type hash<status_index>::operator()(argument_type const& s) const noexcept
@@ -9,6 +9,16 @@ hash<status_index>::result_type hash<status_index>::operator()(argument_type con
 	return h1 ^ h2;
 }
 }
+template <class IT>
+struct regex_reader:public IT
+{
+	const std::unordered_map<symbol, wchar_t> &mp;
+	symbol operator*()
+	{
+		if(**this).
+		return (**this)
+	}
+};
 typedef std::pair<size_t, size_t> node_s;
 nfa::nfa()
 {
@@ -20,39 +30,29 @@ nfa::nfa()
 	symbol plus;//+
 	symbol question;//?
 	symbol backslash;//\ 
-	symbol nor;//^
 	symbol or ;//|
 	symbol backslash_exp;//\a 
 	symbol backet_exp;//(a)
 	symbol repeat_exp;//*+?a
 	symbol or_exp;//a|b
 	symbol to_exp;//a-b
-	std::unordered_map<symbol, wchar_t> id_map;
-	id_map[left_small] = L'(';
-	id_map[right_small] = L')';
-	id_map[star] = L'*';
-	id_map[plus] = L'+';
-	id_map[minus] = L'-';
-	id_map[backslash] = L'\\';
-	id_map[or ] = L'|';
+	id_map.emplace(L'(',left_small);
+	id_map.emplace(L')', right_small);
+	id_map.emplace(L'*', star);
+	id_map.emplace(L'+', plus);
+	id_map.emplace(L'-', minus);
+	id_map.emplace(L'?', question);
+	id_map.emplace(L'\\', backslash);
+	id_map.emplace(L'|', or);
 	for (auto &b : id_map)
 	{
-		backslash_exp = { backslash,b.first }, [ch = b.second, this](unit_it start, unit_it end, unit&one) {
+		backslash_exp = { backslash,b.second }, [this](unit_it start, unit_it end, unit&one) {
 			size_t start_s = create_status();
 			size_t end_s = create_status();
-			link(start_s, end_s, ch);
+			link(start_s, end_s, std::any_cast<wchar_t>(start[1].second));
 			one.second = std::make_pair(start_s, end_s);
 		};
 	}
-	backslash_exp = { char_ }, [this](unit_it start, unit_it end, unit&one) {
-		size_t start_s = create_status();
-		size_t end_s = create_status();
-		link(start_s, end_s, std::any_cast<wchar_t>(start->second));
-		one.second = std::make_pair(start_s, end_s);
-	};
-	backet_exp = { left_small ,backslash_exp,right_small }, [](unit_it start, unit_it end, unit&one) {
-		one.second = start[1].second;
-	};
 	to_exp = { char_,minus,char_ }, [this](unit_it start, unit_it end, unit&one)
 	{
 		size_t start_s = create_status();
@@ -65,24 +65,33 @@ nfa::nfa()
 		}
 		one.second = std::make_pair(start_s, end_s);
 	};
+	backet_exp = { left_small ,or_exp,right_small }, [](unit_it start, unit_it end, unit&one) {
+		one.second = start[1].second;
+	};
 	backet_exp = {backslash_exp}, [](unit_it start, unit_it end, unit&one) {
 		one.second = start[0].second;
+	};
+	backet_exp = { char_ }, [this](unit_it start, unit_it end, unit&one) {
+		size_t start_s = create_status();
+		size_t end_s = create_status();
+		link(start_s, end_s, std::any_cast<wchar_t>(start->second));
+		one.second = std::make_pair(start_s, end_s);
 	};
 	backet_exp = { to_exp }, [](unit_it start, unit_it end, unit&one) {
 		one.second = start[0].second;
 	};
-	repeat_exp = { star,backet_exp }, [this](unit_it start, unit_it end, unit&one) {
+	repeat_exp = { backet_exp,star }, [this](unit_it start, unit_it end, unit&one) {
 		auto a = std::any_cast<node_s>(start[0].second);
 		link(a.second, a.first);
 		link(a.first, a.second);
 		one.second = std::make_pair(a.first, a.second);
 	};
-	repeat_exp = { plus,backet_exp }, [this](unit_it start, unit_it end, unit&one) {
+	repeat_exp = { backet_exp,plus }, [this](unit_it start, unit_it end, unit&one) {
 		auto a = std::any_cast<node_s>(start[0].second);
 		link(a.second, a.first);
 		one.second = std::make_pair(a.first, a.second);
 	};
-	repeat_exp = { question,backet_exp }, [this](unit_it start, unit_it end, unit&one) {
+	repeat_exp = { backet_exp,question }, [this](unit_it start, unit_it end, unit&one) {
 		auto a = std::any_cast<node_s>(start[0].second);
 		link(a.first, a.second);
 		one.second = std::make_pair(a.first, a.second);
@@ -106,9 +115,43 @@ nfa::nfa()
 		link(a.second, b.first);
 		one.second = std::make_pair(a.first, b.second);
 	};
+	reggm = make_grammer(or_exp, [this](unit_it start, unit_it end, unit&one) {
+		node_s b = std::any_cast<node_s>(start->second);
+		link(0, b.first);
+		set_name(b.second, c_id);
+	});
 }
 
 void nfa::add(std::wstring str, size_t id)
 {
+	std::vector<unit> m;
+	m.reserve(str.size());
+	std::transform(str.begin(), str.end(),std::back_inserter(m), [this](wchar_t ch) {
+		auto it = id_map.find(ch);
+		if (it != id_map.end())
+		{
+			return std::make_pair(it->second.id, std::any(ch));
+		}
+		else {
+			return std::make_pair(1uLL, std::any(ch));
+		}
+	});
+	id = c_id;
+	reggm.read(m.begin(), m.end());
+}
+int main()
+{
+	dfa_maker b;
+	b.add(L"a+b|r", 0);
+	b.add(L"a*d|\ ", 1);
+	b.add(L"b?d|w", 2);
+	
+}
 
+thread_local dfa_maker global_dfa;
+thread_local size_t re_s_id=0;
+
+final_symbol::final_symbol(std::wstring str)
+{
+	global_dfa.add(str, re_s_id++);
 }

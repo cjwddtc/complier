@@ -13,6 +13,7 @@ typedef std::function<void(unit_it start, unit_it end, unit&)> specification_han
 struct grammer
 {
 	std::shared_ptr<grammer_impl>_imp;
+	grammer() = default;
 	grammer(grammer_impl *p);
 	void read_one(unit a);
 	template <class ITERATOR>
@@ -39,7 +40,7 @@ struct symbol
 	binder operator=(std::initializer_list<symbol> symbols);
 	bool operator==(const symbol &)const ;
 };
-grammer make_grammer(symbol sym);
+grammer make_grammer(symbol sym,specification_handle root_handle);
 
 namespace std
 {

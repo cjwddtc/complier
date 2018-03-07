@@ -14,7 +14,9 @@
 #include <optional>
 //#define DEBUG_MAP
 
-#include "yufashu.h"
+#include "yufashu.hpp"
+using grammer = yacc::gammer;
+using yacc::symbol;
 class nfa
 {
 	typedef std::optional<wchar_t> input_type;
@@ -23,7 +25,7 @@ class nfa
 
 	size_t c_id;
 	std::unordered_map<wchar_t, symbol> id_map;
-	grammer reggm;
+	std::shared_ptr<grammer> reggm;
 	size_t create_status()
 	{
 		status.push_back(nfa_status());
@@ -112,5 +114,3 @@ struct final_symbol :public symbol
 {
 	final_symbol(std::wstring str);
 };
-
-void 

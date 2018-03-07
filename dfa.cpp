@@ -2,23 +2,25 @@
 #include <algorithm>
 namespace std
 {
-hash<status_index>::result_type hash<status_index>::operator()(argument_type const& s) const noexcept
-{
-	result_type const h1(std::hash<size_t>{}(s.first));
-	result_type const h2(std::hash<size_t>{}(s.second));
-	return h1 ^ h2;
-}
+	hash<status_index>::result_type hash<status_index>::operator()(argument_type const& s) const noexcept
+	{
+		result_type const h1(std::hash<size_t>{}(s.first));
+		result_type const h2(std::hash<size_t>{}(s.second));
+		return h1 ^ h2;
+	}
 }
 template <class IT>
 struct regex_reader:public IT
 {
-	const std::unordered_map<symbol, wchar_t> &mp;
+	const std::map<symbol, wchar_t> &mp;
 	symbol operator*()
 	{
 		if(**this).
 		return (**this)
 	}
 };
+using yacc::unit_it;
+using yacc::unit;
 typedef std::pair<size_t, size_t> node_s;
 nfa::nfa()
 {
@@ -53,6 +55,12 @@ nfa::nfa()
 			one.second = std::make_pair(start_s, end_s);
 		};
 	}
+	backslash_exp = { backslash,char_}, [this](unit_it start, unit_it end, unit&one) {
+		size_t start_s = create_status();
+		size_t end_s = create_status();
+		link(start_s, end_s, std::any_cast<wchar_t>(start[1].second));
+		one.second = std::make_pair(start_s, end_s);
+	};
 	to_exp = { char_,minus,char_ }, [this](unit_it start, unit_it end, unit&one)
 	{
 		size_t start_s = create_status();
@@ -137,21 +145,21 @@ void nfa::add(std::wstring str, size_t id)
 		}
 	});
 	id = c_id;
-	reggm.read(m.begin(), m.end());
+	reggm->read(m.begin(), m.end());
 }
 int main()
 {
 	dfa_maker b;
-	b.add(L"a+b|r", 0);
-	b.add(L"a*d|\ ", 1);
-	b.add(L"b?d|w", 2);
+	b.add(LR"(a+b|a)", 0);
+	b.add(LR"(a*d|\ )", 1);
+	b.add(LR"(b?d|w)", 2);
 	
 }
 
-thread_local dfa_maker global_dfa;
+//thread_local dfa_maker global_dfa;
 thread_local size_t re_s_id=0;
 
 final_symbol::final_symbol(std::wstring str)
 {
-	global_dfa.add(str, re_s_id++);
+	//global_dfa.add(str, re_s_id++);
 }

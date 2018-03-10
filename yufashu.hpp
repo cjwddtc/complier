@@ -69,6 +69,16 @@ namespace std
 namespace tmp
 {
 	using std::any;
+	template <class T, class F>
+	any invoke(std::function < T(F) > func, yacc::unit_it a)
+	{
+		return func(std::any_cast<F>(a[0]));
+	}
+	template <class T>
+	any invoke(std::function < T(yacc::not_use) > func, yacc::unit_it a)
+	{
+		return func(yacc::not_use());
+	}
 	template <class T,class ...ARG>
 	any invoke(std::function < T(yacc::not_use,ARG...) > func, yacc::unit_it a)
 	{
@@ -80,11 +90,6 @@ namespace tmp
 	{
 		std::function<T(ARG...)> f = [func, a](ARG ... arg) {return func(std::any_cast<F>(a[0]), arg...); };
 		return invoke(f, a + 1);
-	}
-	template <class T>
-	any invoke(std::function < T() > func, yacc::unit_it a)
-	{
-		return func();
 	}
 	template<typename T>
 	struct memfun_type

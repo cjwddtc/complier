@@ -67,7 +67,7 @@ nfa::nfa()
 	symbol star;//*
 	symbol plus;//+
 	symbol question;//?
-	symbol backslash;//\ 
+	symbol backslash;//·´Ð±¸Ü
 	symbol or_ ;//|
 	symbol backslash_exp;//\a 
 	symbol backet_exp;//(a)

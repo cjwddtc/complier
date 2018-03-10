@@ -263,15 +263,15 @@ int main_() {
 
 	//定义产生式后面的是lambda表达式相当于动态定义的函数，产生式规约时将会被调用
 	//为什么可以写成这样，是因为我重载了赋值运算符和逗号运算符
-	a = { a,b }, []() {
+	a = { a,b }, [](not_use) {
 		printf("ab\n");
 		return not_use();
 	};
-	a = { c,a }, []() {
+	a = { c,a }, [](not_use) {
 		printf("ca\n");
 		return not_use();
 	};
-	a = { d }, []() {
+	a = { d }, [](not_use) {
 		printf("d\n");
 		return not_use();
 	};

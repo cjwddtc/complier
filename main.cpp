@@ -209,7 +209,7 @@ if(a.types==type_t<type>){\
 	statement = { assign }, pass_by(-1);
 #define print_type(type,f,a) \
 if(a.types==type_t<type>){\
-	printf("%"###f##"\n",__var(type,a));\
+	printf("%"#f"\n",__var(type,a));\
 }
 #define print_all_type(a) \
 print_type(float,f,a)\

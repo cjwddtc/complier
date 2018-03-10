@@ -1,50 +1,16 @@
 #pragma once
-#include <map>
-#include "predef.h"
-#include "map_two.hpp"
+#include <unordered_map>
 #include "template.hpp"
-#include "gram_tree.h"
-#include "regex.hpp"
-#include <set>
 #include <vector>
 #include <assert.h>
 #include <memory>
-#include <iostream>
-#include <iterator>
 #include <optional>
 //#define DEBUG_MAP
 
 #include "yufashu.hpp"
 using grammer = yacc::gammer;
 using yacc::symbol;
-class nfa
-{
-	typedef std::optional<wchar_t> input_type;
-	typedef std::unordered_multimap<input_type, size_t> edge_map;
-	typedef std::pair<edge_map, std::optional<size_t>> nfa_status;
-
-	size_t c_id;
-	std::unordered_map<wchar_t, symbol> id_map;
-	std::shared_ptr<grammer> reggm;
-	size_t create_status()
-	{
-		status.push_back(nfa_status());
-		return status.size() - 1;
-	}
-	void set_name(size_t id, size_t name)
-	{
-		status[id].second = name;
-	}
-	void link(size_t from, size_t to, input_type ch=input_type())
-	{
-		status[from].first.emplace(ch, to);
-	}
-protected:
-	std::vector<nfa_status> status;
-public:
-	nfa();
-	void add(std::wstring str,size_t id);
-};
+using yacc::unit;
 
 
 typedef size_t state_type;
@@ -61,56 +27,89 @@ namespace std
 	};
 }
 
-class dfa_maker:public state_to_map<state_type, input_type>,public nfa
+struct dfa
 {
-public:
-	typedef typename state_to_map<state_type, wchar_t>::state_set state_set;
-	typedef typename state_to_map<state_type, wchar_t>::next_map next_map;
 	std::unordered_map<status_index, size_t> status_map;
 	std::unordered_map<state_type, size_t> fin_status;
-    virtual void expand(state_type id,state_set &ptr)
-    {
-		auto &stat = status[id].first;
-		auto b = stat.equal_range(std::optional<wchar_t>());
-        while(b.first!=b.second)
-        {
-            if(ptr.find(b.first->second)==ptr.end())
-            {
-				ptr.emplace(b.first->second);
-                expand(b.first->second,ptr);
-            }
-            ++b.first;
-        }
-    }
-    virtual void next(const state_set &ptr,next_map &map)
-    {
-        for(size_t b:ptr)
-        {
-            for(auto a: status[b].first)
-            {
-                map[*a.first].insert(a.second);
-            }
-        }
-    }
-
-    virtual void link(const state_set &from_set,const state_set &to_set,wchar_t ch)
-    {
-		status_map[std::make_pair(this->get_id(from_set),ch)]= this->get_id(to_set);
-    }
-    virtual void add_state(size_t n,const state_set &ptr)
-    {
-        for(size_t d:ptr)
-        {
-			if (status[d].second)
-			{
-				fin_status[n] = *status[d].second;
+	dfa(std::unordered_map<status_index, size_t> &&m, std::unordered_map<state_type, size_t> &&f);
+	template <class IT>
+	struct word_iterator
+	{
+		IT cu;
+		IT end;
+		dfa *d;
+		size_t current_status;
+		std::wstring value;
+		size_t id;
+		word_iterator(IT start_, IT end_, dfa *f):
+			cu(start_), end(end_), d(f),current_status(0){
+			if (cu == end) current_status = -1;
+		}
+		unit operator*()
+		{
+			return unit(id, value);
+		}
+		bool operator!=(const word_iterator&o)
+		{
+			return current_status != o.current_status;
+		}
+		word_iterator &operator++()
+		{
+			value.clear();
+			bool flag = true;
+			while (cu != end) {
+				flag = false;
+				auto it = d->status_map.find(status_index(current_status, *cu));
+				if (it != d->status_map.end())
+				{
+					current_status = it->second;
+					value.push_back(*cu);
+				}
+				else {
+					auto it = d->fin_status.find(current_status);
+					if ( it != d->fin_status.end()) {
+						id = it->second;
+						current_status = 0;
+						return *this;
+					}
+					else {
+						printf("%d\n", *cu);
+						throw *cu;
+					}
+				}
+				++cu;
 			}
-        }
-    }
+			if (current_status == 0)
+			{
+				if (flag)
+				{
+					current_status = -1;
+				}
+				return *this;
+			}
+			throw 1;
+		}
+		word_iterator operator++(int)
+		{
+			word_iterator<IT> it(*this);
+			this->operator++();
+			return it;
+		}
+	};
+	template <class IT>
+	std::pair<word_iterator<IT>, word_iterator<IT>> read(IT start, IT end)
+	{
+		word_iterator<IT> it(start, end, this);
+		++it;
+		return std::make_pair(it, word_iterator<IT>(end, end, this));
+	}
 };
 
+
+std::shared_ptr<dfa> make_dfa();
 
 struct final_symbol :public symbol
 {
 	final_symbol(std::wstring str);
 };
+

@@ -23,8 +23,8 @@ namespace yacc {
 	typedef size_t input_type;
 	//产生式右侧和语法制导翻译的函数
 	typedef pair<const size_t, any> unit;
-	typedef vector<unit>::iterator unit_it;
-	typedef function<void(unit_it start, unit_it end, unit&)> specification_handle;
+	typedef vector<any>::iterator unit_it;
+	typedef function<any(unit_it start)> specification_handle;
 	typedef pair<vector<input_type>, specification_handle> specification_left;
 	//移进
 	struct shift
@@ -42,6 +42,7 @@ namespace yacc {
 	typedef variant<shift, specification> op;
 	//状态转移表的索引
 	typedef pair<size_t, size_t> state_index;
+	struct not_use {};
 }
 
 //实现hash函数
@@ -59,12 +60,50 @@ namespace std
 		}
 	};
 }
+namespace tmp
+{
+	using std::any;
+	template <class T,class ...ARG>
+	any invoke(std::function < T(yacc::not_use,ARG...) > func, yacc::unit_it a)
+	{
+		std::function<T(ARG...)> f = [func, a](ARG ... arg) {return func(yacc::not_use(), arg...);};
+		return invoke(f, a + 1);
+	}
+	template <class T, class F, class ...ARG>
+	any invoke(std::function < T(F, ARG...) > func, yacc::unit_it a)
+	{
+		std::function<T(ARG...)> f = [func, a](ARG ... arg) {return func(std::any_cast<F>(a[0]), arg...); };
+		return invoke(f, a + 1);
+	}
+	template <class T>
+	any invoke(std::function < T() > func, yacc::unit_it a)
+	{
+		return func();
+	}
+	using namespace std;
+	template<typename T>
+	struct memfun_type
+	{
+		using type = void;
+	};
+	template<typename Ret, typename Class, typename... Args>
+	struct memfun_type<Ret(Class::*)(Args...) const>
+	{
+		using type = std::function<Ret(Args...)>;
+	};
+	template<typename F>
+	typename memfun_type<decltype(&F::operator())>::type
+		FFL(F const &func)
+	{//Function from lambda!
+		return func;
+	}
+}
 namespace yacc{
 	class gammer
 	{
 		typedef std::unordered_map<state_index, op> state_map;
 		state_map map;
-		std::vector<unit> stack_symbol;
+		std::vector<any> stack_symbol;
 		std::vector<size_t> stack_state;
 	public:
 		gammer(state_map &&map_);
@@ -72,6 +111,9 @@ namespace yacc{
 		template <class ITERATOR>
 		void read(ITERATOR start, ITERATOR end)
 		{
+			stack_state.clear();
+			stack_symbol.clear();
+			stack_state.emplace_back(0);
 			while (start != end)
 			{
 				read_one(*start++);
@@ -79,12 +121,24 @@ namespace yacc{
 			read_one(std::make_pair(-1, std::any()));
 		}
 	};
-	struct binder
+	struct pass_by
+	{
+		size_t n;
+		pass_by(size_t m);
+	};
+	class binder
 	{
 		std::vector<input_type> symbols;
 		input_type id;
+		void add(specification_handle han);
+	public:
 		binder(input_type id_, std::vector<input_type> &&syms);
-		void operator,(specification_handle han);
+		void operator,(pass_by p);
+		template <class T>
+		void operator,(T han)
+		{
+			add([han](unit_it a) {return tmp::invoke(tmp::FFL(han), a); });
+		}
 	};
 	struct symbol
 	{
@@ -94,5 +148,18 @@ namespace yacc{
 		bool operator==(const symbol &)const;
 	};
 	std::shared_ptr<gammer> make_grammer(symbol sym, specification_handle root_handle);
-
+	template <class T>
+	std::shared_ptr<gammer> make_grammer(symbol sym, std::function<void(T)> root_handle)
+	{
+		specification_handle b = [root_handle](unit_it i) {
+			root_handle(std::any_cast<T>(*i));
+			return any();
+		};
+		return make_grammer(sym, b);
+	}
+	template <class T>
+	std::shared_ptr<gammer> make_grammer(symbol sym, T root_handle)
+	{
+		return make_grammer(sym,tmp::FFL(root_handle));
+	}
 }

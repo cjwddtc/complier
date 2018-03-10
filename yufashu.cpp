@@ -41,22 +41,10 @@ namespace std
 //项目为状态类型
 typedef project state_type;
 
-gammer::gammer(state_map &&map_) :map(std::move(map_)){
-	stack_state.push_back(0);
-}
+gammer::gammer(state_map &&map_) :map(std::move(map_)){}
 
 void gammer::read_one(unit a)
 {
-	printf("%lld in:", a.first);
-	for (auto a : stack_symbol)
-	{
-		printf("%lld|", a.first);
-	}
-	printf("\n");
-	if (stack_symbol.size() == 1 && a.first == -1)
-	{
-		printf("");
-	}
 	auto it = map.find(state_index(stack_state.back(), a.first));
 	if (it != map.end())
 	{
@@ -64,14 +52,12 @@ void gammer::read_one(unit a)
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, shift>)
 			{
-				stack_symbol.emplace_back(a);
+				stack_symbol.emplace_back(a.second);
 				stack_state.emplace_back(arg.state);
 			}
 			else if constexpr (std::is_same_v<T, specification>)
 			{
-				printf("guiyue:%lld->%lld\n", arg.size, arg.id);
-				unit b(arg.id, std::any());
-				arg.func(stack_symbol.end() - arg.size, stack_symbol.end(), b);
+				any b = arg.func(stack_symbol.end() - arg.size);
 				stack_state.resize(stack_state.size() - arg.size);
 				stack_symbol.resize(stack_symbol.size() - arg.size);
 				//stack_state.erase(stack_state.end() - arg.size, stack_state.end());
@@ -82,7 +68,7 @@ void gammer::read_one(unit a)
 					stack_symbol.clear();
 				}
 				else {
-					read_one(b);
+					read_one(unit(arg.id,b));
 					read_one(a);
 				}
 			}
@@ -228,21 +214,31 @@ binder::binder(input_type id_, std::vector<input_type>&& syms):id(id_), symbols(
 	
 }
 
-void binder::operator,(specification_handle han)
+void yacc::binder::operator,(pass_by p)
+{
+	if (p.n == -1) {
+		add([](unit_it b) {return not_use(); });
+	}
+	else {
+		add([a = p.n](unit_it b){return b[a]; });
+	}
+}
+
+
+void binder::add(specification_handle han)
 {
 	global_grammer_impl.add(id, std::move(symbols), han);
 }
 
-
-int main_() {/*
+int main_() {
 	symbol a;
 	symbol b;
 	symbol c;
 	symbol d;
 	symbol e;
 	symbol f;
-	specification_handle func = [](auto start, auto b, auto &c) {
-
+	std::function<int(int)> func = [](int c) {
+		return 0;
 	};
 	a = { b,c,d }, func;
 	a = { c,d }, func;
@@ -251,10 +247,14 @@ int main_() {/*
 	c = { e,f }, func;
 	std::shared_ptr<gammer> asd = make_grammer(a, specification_handle());
 	std::vector<unit> vec;
-	vec.push_back(std::make_pair(6, std::any()));
-	vec.push_back(std::make_pair(5, std::any()));
-	vec.push_back(std::make_pair(6, std::any()));
-	vec.push_back(std::make_pair(4, std::any()));
-	asd->read(vec.begin(), vec.end());*/
+	vec.push_back(std::make_pair(6, std::any(1)));
+	vec.push_back(std::make_pair(5, std::any(2)));
+	vec.push_back(std::make_pair(6, std::any(3)));
+	vec.push_back(std::make_pair(4, std::any(4)));
+	asd->read(vec.begin(), vec.end());
 	return 0;
+}
+
+yacc::pass_by::pass_by(size_t m):n(m)
+{
 }

@@ -66,6 +66,7 @@ protected:
 	}
     void make_map(state_type start_state)
     {
+		n = 0;
 		state_set start_set;
 		start_set.insert(start_state);
 		insert(start_set);

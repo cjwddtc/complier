@@ -63,7 +63,7 @@ int main()
 		*(float*)(c + c_pos)=std::stod(str);
 		var_info a;
 		a.pos = c_pos;
-		a.types=int_;
+		a.types=float_;
 		c_pos += sizeof(int);
 		return a;
 	};
@@ -114,7 +114,7 @@ int main()
 #define __var(a,b) (*(a*)(c+b.pos))
 
 #define type_op(type,op,a,b) \
-if(a.types=type_t<type>){\
+if(a.types==type_t<type>){\
 	(*(type*)(c))=__var(type,a) op __var(type,b);\
 }
 #define op_run(op,a,b) \
@@ -178,7 +178,7 @@ if(a.types=type_t<type>){\
 	};
 	statement = { assign }, pass_by(-1);
 #define print_type(type,f,a) \
-if(a.types=type_t<type>){\
+if(a.types==type_t<type>){\
 	printf("%"###f##"\n",__var(type,a));\
 }
 #define print_all_type(a) \

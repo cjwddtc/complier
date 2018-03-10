@@ -52,6 +52,7 @@ struct regex_reader:public IT
 using yacc::unit_it;
 using yacc::unit;
 typedef std::pair<size_t, size_t> node_s;
+using yacc::pass_by;
 nfa::nfa()
 {
 	create_status();
@@ -103,21 +104,15 @@ nfa::nfa()
 		}
 		return std::make_pair(start_s, end_s);
 	};
-	backet_exp = { left_small ,or_exp,right_small }, [](not_use,node_s a,not_use) {
-		return a;
-	};
-	backet_exp = {backslash_exp}, [](node_s a) {
-		return a;
-	};
+	backet_exp = { left_small ,or_exp,right_small }, pass_by(1);
+	backet_exp = {backslash_exp}, pass_by(0);
 	backet_exp = { char_ }, [this](wchar_t ch) {
 		size_t start_s = create_status();
 		size_t end_s = create_status();
 		link(start_s, end_s,ch);
 		return std::make_pair(start_s, end_s);
 	};
-	backet_exp = { to_exp }, [](node_s a) {
-		return a;
-	};
+	backet_exp = { to_exp }, pass_by(0);
 	repeat_exp = { backet_exp,star }, [this](node_s a,not_use) {
 		link(a.second, a.first);
 		link(a.first, a.second);
@@ -131,17 +126,13 @@ nfa::nfa()
 		link(a.first, a.second);
 		return a;
 	};
-	repeat_exp = {backet_exp}, [](node_s a) {
-		return a;
-	};
-	or_exp = { repeat_exp,or,repeat_exp }, [this](node_s a,not_use,node_s b) {
+	repeat_exp = {backet_exp}, pass_by(0);
+	or_exp = { or_exp,or,or_exp }, [this](node_s a,not_use,node_s b) {
 		link(a.first, b.first);
 		link(b.second, a.second);
 		return a;
 	};
-	or_exp = { repeat_exp }, [](node_s a) {
-		return a;
-	};
+	or_exp = { repeat_exp }, pass_by(0);
 	or_exp = { or_exp,or_exp }, [this](node_s a,node_s b) {
 		link(a.second, b.first);
 		return std::make_pair(a.first, b.second);

@@ -157,6 +157,7 @@ namespace yacc{
 		};
 		return make_grammer(sym, b);
 	}
+	std::shared_ptr<gammer> make_grammer(symbol sym, std::function<void(not_use)> root_handle);
 	template <class T>
 	std::shared_ptr<gammer> make_grammer(symbol sym, T root_handle)
 	{

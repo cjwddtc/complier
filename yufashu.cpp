@@ -183,6 +183,7 @@ public:
 	//void read(gram_tree_node b);
 };
 
+
 thread_local grammer_maker global_grammer_impl;
 thread_local size_t sid = 1;
 
@@ -230,27 +231,36 @@ void binder::add(specification_handle han)
 	global_grammer_impl.add(id, std::move(symbols), han);
 }
 
+std::shared_ptr<yacc::gammer> yacc::make_grammer(symbol sym, std::function<void(not_use)> root_handle)
+{
+	return make_grammer(sym,(yacc::specification_handle) [](unit_it a) {return not_use(); });
+}
+
 int main_() {
 	symbol a;
 	symbol b;
 	symbol c;
 	symbol d;
-	symbol e;
-	symbol f;
 	std::function<int(int)> func = [](int c) {
 		return 0;
 	};
-	a = { b,c,d }, func;
-	a = { c,d }, func;
-	a = { b,c,d,f }, func;
-	b = { f }, func;
-	c = { e,f }, func;
-	std::shared_ptr<gammer> asd = make_grammer(a, specification_handle());
+	a = { a,b }, []() {
+		printf("ab\n");
+		return not_use();
+	};
+	a = { c,a }, []() {
+		printf("ca\n");
+		return not_use();
+	};
+	a = { d }, []() {
+		printf("d\n");
+		return not_use();
+	};
+	std::shared_ptr<gammer> asd = make_grammer(a, [](not_use a) { });
 	std::vector<unit> vec;
-	vec.push_back(std::make_pair(6, std::any(1)));
-	vec.push_back(std::make_pair(5, std::any(2)));
-	vec.push_back(std::make_pair(6, std::any(3)));
-	vec.push_back(std::make_pair(4, std::any(4)));
+	vec.push_back(std::make_pair(c.id, std::any(1)));
+	vec.push_back(std::make_pair(d.id, std::any(2)));
+	vec.push_back(std::make_pair(b.id, std::any(3)));
 	asd->read(vec.begin(), vec.end());
 	return 0;
 }

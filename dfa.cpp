@@ -234,3 +234,8 @@ dfa::dfa(std::unordered_map<status_index, size_t>&& m, std::unordered_map<state_
 	:status_map(std::move(m)),fin_status(std::move(f))
 {
 }
+
+null_symbol::null_symbol(std::wstring str)
+{
+	global_dfa.add(str, 0);
+}

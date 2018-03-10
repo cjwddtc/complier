@@ -53,6 +53,21 @@ struct dfa
 		{
 			return current_status != o.current_status;
 		}
+		word_iterator &try_finish() {
+			auto it = d->fin_status.find(current_status);
+			if (it != d->fin_status.end()) {
+				id = it->second;
+				current_status = 0;
+				if (id == 0) {
+					operator++();
+				}
+				return *this;
+			}
+			else {
+				printf("%d\n", *cu);
+				throw *cu;
+			}
+		}
 		word_iterator &operator++()
 		{
 			value.clear();
@@ -66,28 +81,17 @@ struct dfa
 					value.push_back(*cu);
 				}
 				else {
-					auto it = d->fin_status.find(current_status);
-					if ( it != d->fin_status.end()) {
-						id = it->second;
-						current_status = 0;
-						return *this;
-					}
-					else {
-						printf("%d\n", *cu);
-						throw *cu;
-					}
+					return try_finish();
 				}
 				++cu;
 			}
-			if (current_status == 0)
-			{
-				if (flag)
-				{
-					current_status = -1;
-				}
+			if (flag) {
+				current_status = -1;
 				return *this;
 			}
-			throw 1;
+			else {
+				return try_finish();
+			}
 		}
 		word_iterator operator++(int)
 		{
@@ -113,3 +117,7 @@ struct final_symbol :public symbol
 	final_symbol(std::wstring str);
 };
 
+struct null_symbol :public symbol
+{
+	null_symbol(std::wstring str);
+};

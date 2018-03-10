@@ -106,7 +106,7 @@ public:
 			for (auto it = itp.first; it != itp.second; it++)
 			{
 				if (it->second.first.front() == id) {
-					break;
+					continue;
 				}
 				else {
 					get_first(it->second.first.front(), set);

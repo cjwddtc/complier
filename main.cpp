@@ -25,26 +25,30 @@ char *p = (char*)malloc(4096);
 char *c = p;
 size_t c_pos=8;
 std::unordered_map<std::wstring, var_info> symbol_map;
+
 int main()
 {
 	type_t<int> = int_;
 	type_t<float> = float_;
 	type_t<char> = char_;
+	null_symbol space(LR"(\ )");
+	null_symbol newline(LR"(\
+)");
 	final_symbol type(LR"((int)|(float)|(char))");
 	final_symbol id(LR"((a-b)+)");
 	final_symbol print(LR"(print)");
 	final_symbol number(LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
+	final_symbol int_number(LR"((1-9)(0-9)*)");
 	final_symbol ar(LR"(\-\>)");
 	final_symbol op1(LR"(\+|\-)");
 	final_symbol op2(LR"(\*|\/)");
 	final_symbol bl(LR"(\()");
 	final_symbol br(LR"(\))");
+
 	final_symbol ml(LR"(\[)");
 	final_symbol mr(LR"(\])");
 	final_symbol equal(LR"(\=)");
 	final_symbol sep(LR"(;)");
-	final_symbol newline(LR"(\
-)");
 	symbol array_;
 	symbol unre;
 	symbol muti;
@@ -56,10 +60,18 @@ int main()
 	symbol statement;
 	symbol statements;
 	var = { number }, [](std::wstring str) {
-		*(int*)(c + c_pos)=std::stod(str);
+		*(float*)(c + c_pos)=std::stod(str);
 		var_info a;
 		a.pos = c_pos;
 		a.types=int_;
+		c_pos += sizeof(int);
+		return a;
+	};
+	var = { int_number }, [](std::wstring str) {
+		*(int*)(c + c_pos) = std::stoi(str);
+		var_info a;
+		a.pos = c_pos;
+		a.types = int_;
 		c_pos += sizeof(int);
 		return a;
 	};
@@ -167,7 +179,7 @@ if(a.types=type_t<type>){\
 	statement = { assign }, pass_by(-1);
 #define print_type(type,f,a) \
 if(a.types=type_t<type>){\
-	printf(#f##"\n",__var(type,a));\
+	printf("%"###f##"\n",__var(type,a));\
 }
 #define print_all_type(a) \
 print_type(float,f,a)\
@@ -182,9 +194,9 @@ else print_type(char,c,a)
 	statements = { statement }, pass_by(-1);
 	statements = { statements,statement }, pass_by(-1);
 	auto a = make_dfa();
-	auto b = make_grammer(statements, [](not_use a) {return not_use(); });
+	auto b = make_grammer(statements, [](not_use a) {});
 	std::wifstream ff("D:\\test.txt");
-	auto it = a->read(std::istreambuf_iterator<wchar_t>(std::wcin), std::istreambuf_iterator<wchar_t>());
+	auto it = a->read(std::istreambuf_iterator<wchar_t>(ff), std::istreambuf_iterator<wchar_t>());
 	b->read(it.first, it.second);
 	return 0;
 }

@@ -68,7 +68,7 @@ nfa::nfa()
 	symbol plus;//+
 	symbol question;//?
 	symbol backslash;//\ 
-	symbol or ;//|
+	symbol or_ ;//|
 	symbol backslash_exp;//\a 
 	symbol backet_exp;//(a)
 	symbol repeat_exp;//*+?a
@@ -81,7 +81,7 @@ nfa::nfa()
 	id_map.emplace(L'-', minus);
 	id_map.emplace(L'?', question);
 	id_map.emplace(L'\\', backslash);
-	id_map.emplace(L'|', or);
+	id_map.emplace(L'|', or_);
 	using yacc::not_use;
 	for (auto &b : id_map)
 	{
@@ -131,7 +131,7 @@ nfa::nfa()
 		return a;
 	};
 	repeat_exp = {backet_exp}, pass_by(0);
-	or_exp = { or_exp,or,or_exp }, [this](node_s a,not_use,node_s b) {
+	or_exp = { or_exp,or_,or_exp }, [this](node_s a,not_use,node_s b) {
 		link(a.first, b.first);
 		link(b.second, a.second);
 		return a;

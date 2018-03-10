@@ -13,3 +13,4 @@ obj\
 *.note
 *.sublime-workspace
 /.vs
+build

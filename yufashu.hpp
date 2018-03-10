@@ -86,7 +86,6 @@ namespace tmp
 	{
 		return func();
 	}
-	using namespace std;
 	template<typename T>
 	struct memfun_type
 	{

@@ -156,10 +156,10 @@ void nfa::add(std::wstring str, size_t id)
 		auto it = id_map.find(ch);
 		if (it != id_map.end())
 		{
-			return std::make_pair(it->second.id, std::any(ch));
+			return unit(it->second.id, std::any(ch));
 		}
 		else {
-			return std::make_pair(1uLL, std::any(ch));
+			return unit(1uLL, std::any(ch));
 		}
 	});
 	c_id=id;

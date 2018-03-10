@@ -4,34 +4,46 @@
 
 class nfa
 {
+	//nfa的状态转移的输入或者说边optional表示可以包含wchar_t也可能为空，为空时表示为空边（可以直接转化）
 	typedef std::optional<wchar_t> input_type;
+	//某一个nfa状态描述所有的边,size_t为nfa状态在数组中的索引
 	typedef std::unordered_multimap<input_type, size_t> edge_map;
+	//这个optional表示此状态是否为可结束状态，如果是此optional储存结束时输出的词法单元id
+	//这两个组合在一起作为nfa的状态
 	typedef std::pair<edge_map, std::optional<size_t>> nfa_status;
-
+	//当前正则的id,生成nfa是使用
 	size_t c_id;
+	//nfa状态数组
 	std::unordered_map<wchar_t, symbol> id_map;
+	//解析正则表达式的语法分析器
 	std::shared_ptr<grammer> reggm;
+	//创建一个nfa状态返回其在数组中的索引
 	size_t create_status()
 	{
 		status.push_back(nfa_status());
 		return status.size() - 1;
 	}
+	//设置一个nfa状态为可结束状态,结束时输出位name，该状态在数组中的索引为id
 	void set_name(size_t id, size_t name)
 	{
 		status[id].second = name;
 	}
+	//添加一条nfa边,第三个参数默认为空边
 	void link(size_t from, size_t to, input_type ch = input_type())
 	{
 		status[from].first.emplace(ch, to);
 	}
 protected:
+	//nfa状态数组
 	std::vector<nfa_status> status;
 public:
 	nfa();
+	//讲一个正则表达式添加到nfa中
 	void add(std::wstring str, size_t id);
 };
 namespace std
 {
+	//hash函数不重要
 	hash<status_index>::result_type hash<status_index>::operator()(argument_type const& s) const noexcept
 	{
 		result_type const h1(std::hash<size_t>{}(s.first));
@@ -39,22 +51,14 @@ namespace std
 		return h1 ^ h2;
 	}
 }
-template <class IT>
-struct regex_reader:public IT
-{
-	const std::map<symbol, wchar_t> &mp;
-	symbol operator*()
-	{
-		if(**this).
-		return (**this)
-	}
-};
 using yacc::unit_it;
 using yacc::unit;
 typedef std::pair<size_t, size_t> node_s;
 using yacc::pass_by;
+//这个函数主要调用语法分析器解析正则表达式,语法分析器使用方法会在main.cpp中描述
 nfa::nfa()
 {
+	//这个语句主要是避开0状态作为初始状态
 	create_status();
 	symbol char_;//regularchar
 	symbol minus;//-
@@ -161,7 +165,10 @@ void nfa::add(std::wstring str, size_t id)
 	c_id=id;
 	reggm->read(m.begin(), m.end());
 }
-
+//nfa转dfa类，非常复杂，一方面继承自需要转换的nfa
+//另外一方面集成了一个特殊的类,该类通过调用一组由子类重写的函数来实现构造状态转移表的功能
+//具体请看template.hpp
+//只需要实现预定义好的闭包（expand）和状态转移（next）函数（即求这个状态所能转移到的所有状态）既可以实现nfa转dfa
 class dfa_maker :public state_to_map<state_type, input_type>, public nfa
 {
 public:
@@ -195,13 +202,15 @@ public:
 			}
 		}
 	}
-
+	//state_to_map在创建一条新边的时候调用
 	virtual void link(const state_set &from_set, const state_set &to_set, wchar_t ch)
 	{
 		status_map[std::make_pair(this->get_id(from_set), ch)] = this->get_id(to_set);
 	}
+	//state_to_map在新建状态是调用
 	virtual void add_state(size_t n, const state_set &ptr)
 	{
+		//判断这个状态是否是可结束状态表
 		for (size_t d : ptr)
 		{
 			if (status[d].second)
@@ -210,15 +219,15 @@ public:
 			}
 		}
 	}
+	//调用父类make_map nfa转dfa
 	std::shared_ptr<dfa> make_dfa()
 	{
 		make_map(0);
 		return std::make_shared<dfa>(std::move(status_map), std::move(fin_status));
 	}
 };
-
+//全局的一个dfa_maker
 thread_local dfa_maker global_dfa;
-thread_local size_t re_s_id=0;
 
 std::shared_ptr<dfa> make_dfa()
 {

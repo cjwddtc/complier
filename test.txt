@@ -1,0 +1,6 @@
+float a;
+a=55.4;
+float b;
+b=33.2;
+a=a+b;
+print a;

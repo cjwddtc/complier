@@ -1,9 +1,11 @@
+//单独抽象出来的一个类
+//因为lr(1)和nfa转dfa中有着相同的操作(闭包和状态转移),所以将其抽象出来
 #pragma once
 #include <unordered_set>
 #include <unordered_map>
 
 
-//实现hash函数
+//实现hash函数，不重要
 namespace std
 {
 	template<class state_type> 
@@ -23,7 +25,7 @@ namespace std
 		}
 	};
 }
-
+//这个通过预定义的闭包和状态转移操作实现nfa转dfa或者是lr(1)
 template <class state_type,class input_type>
 class state_to_map
 {
@@ -31,18 +33,25 @@ public:
     typedef std::unordered_set<state_type> state_set;
 	typedef std::unordered_map<input_type, state_set> next_map;
 private:
+	//状态id对应的状态集合
     std::unordered_map<state_set,size_t> all;
 	size_t n;
+	//待next的状态
 	std::unordered_set<const state_set*> read_to_next;
 protected:
+	//闭包将一个状态闭包为状态集合
     virtual void expand(state_type type,state_set &ptr)=0;
+	//状态转移，求当前状态所能转移到的状态
     virtual void next(const state_set &type,next_map &map)=0;
+	//当两个状态又转移关系时调用该函数
     virtual void link(const state_set &from_set,const state_set &to_set,input_type input)=0;
+	//新建状态
     virtual void add_state(size_t n,const state_set &ptr)=0;
     size_t get_id(const state_set &ss)
     {
         return all[ss];
     }
+	//插入新状态
 	inline const state_set& insert(state_set &state)
 	{
 		state_set estate=state;
@@ -64,6 +73,7 @@ protected:
 		}
 		return it->first;
 	}
+	//通过一个开始状态计算整个状态转移表
     void make_map(state_type start_state)
     {
 		n = 0;

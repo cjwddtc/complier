@@ -1,3 +1,6 @@
+/*
+这个文件实现了通过lr(1)对正则表达式读取并转换成nfa在转换成dfa
+*/
 #pragma once
 #include <unordered_map>
 #include "template.hpp"
@@ -16,7 +19,7 @@ using yacc::unit;
 typedef size_t state_type;
 typedef std::pair<state_type, wchar_t> status_index;
 typedef  wchar_t input_type;
-//实现hash函数
+//实现hash函数，不重要
 namespace std
 {
 	template<> struct hash<status_index>
@@ -29,9 +32,12 @@ namespace std
 
 struct dfa
 {
+	//状态转移表
 	std::unordered_map<status_index, size_t> status_map;
+	//可结束状态表(在这些状态是接受不可接受输入视为解析到一个词法单元
 	std::unordered_map<state_type, size_t> fin_status;
 	dfa(std::unordered_map<status_index, size_t> &&m, std::unordered_map<state_type, size_t> &&f);
+	//使用了一些特殊的奇技淫巧实现了将一对字符流迭代器转化成词法符号迭代器并直接传给语法分析器，不重要
 	template <class IT>
 	struct word_iterator
 	{
@@ -109,14 +115,14 @@ struct dfa
 	}
 };
 
-
+//通过nfa创建dfa
 std::shared_ptr<dfa> make_dfa();
-
+//终结符，通过词法分析器输出的符号继承自非终结符
 struct final_symbol :public symbol
 {
 	final_symbol(std::wstring str);
 };
-
+//空字符，词法分析器不会输出这些词法单元（比如空格回车等等）
 struct null_symbol :public symbol
 {
 	null_symbol(std::wstring str);

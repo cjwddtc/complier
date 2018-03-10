@@ -1,3 +1,6 @@
+//编译器语法制导翻译和运行时储存分配部分由于时间仓促我只是对付了一个出来，而且而且解释执行
+//后续我可能会增加功能可以在github上查看
+//目前支持int float的加减乘除和打印，且不支持类型转换
 #include "dfa.h"
 #include "yufashu.hpp"
 #include <iostream>
@@ -8,32 +11,41 @@ using yacc::unit_it;
 using yacc::make_grammer;
 using yacc::pass_by;
 using yacc::not_use;
+//支持的类型char由于字面值比较麻烦没弄
 enum v_type_n {
 	float_,int_ , char_
 };
+//变量信息pos为距离栈顶偏移量types为类型
 struct var_info
 {
 	size_t pos;
 	v_type_n types;
 };
+//定义从类型到v_type_n的映射
 template <class T>
 v_type_n type_t = float_;
 
 
-
+//分配栈
 char *p = (char*)malloc(4096);
+//栈顶指针不过由于没有实现函数功能所以和p是永远一样的
 char *c = p;
+//栈的起始分配位置最开头的8个字节当临时变量了
 size_t c_pos=8;
+//符号表
 std::unordered_map<std::wstring, var_info> symbol_map;
 
 int main()
 {
+	//初始化类型到类型枚举的映射
 	type_t<int> = int_;
 	type_t<float> = float_;
 	type_t<char> = char_;
+	//不要的词法符号懒得写制表符
 	null_symbol space(LR"(\ )");
 	null_symbol newline(LR"(\
 )");
+	//通过正则表达式定义终结符
 	final_symbol type(LR"((int)|(float)|(char))");
 	final_symbol id(LR"((a-b)+)");
 	final_symbol print(LR"(print)");
@@ -49,17 +61,31 @@ int main()
 	final_symbol mr(LR"(\])");
 	final_symbol equal(LR"(\=)");
 	final_symbol sep(LR"(;)");
+
+	//下面是非终结符
+	//数组还不支持
 	symbol array_;
+	//不支持
 	symbol unre;
+	//乘法算式
 	symbol muti;
+	//括号
 	symbol backet;
+	//加减算式
 	symbol plus;
+	//赋值算式
 	symbol assign;
+	//变量
 	symbol var;
+	//声明语句
 	symbol declartor;
+	//语句
 	symbol statement;
+	//语句组
 	symbol statements;
+	//数字本身是变量
 	var = { number }, [](std::wstring str) {
+		//计算数字值和分配内存空间
 		*(float*)(c + c_pos)=std::stod(str);
 		var_info a;
 		a.pos = c_pos;
@@ -68,6 +94,7 @@ int main()
 		return a;
 	};
 	var = { int_number }, [](std::wstring str) {
+		//计算数字值和分配内存空间（整形）
 		*(int*)(c + c_pos) = std::stoi(str);
 		var_info a;
 		a.pos = c_pos;
@@ -76,6 +103,7 @@ int main()
 		return a;
 	};
 	var = {id}, [](std::wstring str) {
+		//从符号表中查找
 		auto a = symbol_map.find(str);
 		if (a == symbol_map.end()) {
 			throw L"undefind id " + str;
@@ -84,6 +112,7 @@ int main()
 			return a->second;
 		}
 	};
+	//声明语句
 	declartor = { type,id ,sep }, [](std::wstring str,std::wstring id) {
 		auto a = symbol_map.find(str);
 		if (a != symbol_map.end()) {
@@ -108,10 +137,11 @@ int main()
 		}
 		return b;
 	};
-
+	//这个pass_by表示规约后，被规约的第二个符号backet的值直接赋给规程成的backet
 	backet = { bl,backet,br }, pass_by(1);
+	//这个pass_by同理
 	backet = { var }, pass_by(0);
-#define __var(a,b) (*(a*)(c+b.pos))
+#define __var(type,b) (*(type*)(c+b.pos))
 
 #define type_op(type,op,a,b) \
 if(a.types==type_t<type>){\
@@ -185,17 +215,19 @@ if(a.types==type_t<type>){\
 print_type(float,f,a)\
 else print_type(int,d,a)\
 else print_type(char,c,a)
-
+	//打印语句，这里not_use表示并不需要这个文法符号的数据
 	statement = { print,plus,sep }, [](not_use, var_info a) {
 		print_all_type(a)
 		return not_use();
 	};
+	//pass_by传-1表示不生成数据
 	statement = { declartor }, pass_by(-1);
 	statements = { statement }, pass_by(-1);
 	statements = { statements,statement }, pass_by(-1);
 	auto a = make_dfa();
 	auto b = make_grammer(statements, [](not_use a) {});
-	std::wifstream ff("D:\\test.txt");
+	//读取并执行test.txt的内容
+	std::wifstream ff("test.txt");
 	auto it = a->read(std::istreambuf_iterator<wchar_t>(ff), std::istreambuf_iterator<wchar_t>());
 	b->read(it.first, it.second);
 	return 0;

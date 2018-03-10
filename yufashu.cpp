@@ -2,13 +2,17 @@
 #include <algorithm>
 #include "yufashu.hpp"
 using namespace yacc;
-
+//lr(1)项目
 class project
 {
 public:
+	//产生式左端
 	input_type from_id;
+	//产生式右端
 	const specification_left &to_id;
+	//规约条件（后继符号）
 	input_type fin_id;
+	//当前位置
 	size_t pos;
 	project(input_type id_, const specification_left &to_id_, input_type fin_id_, size_t pos_ = 0) :
 		from_id(id_), to_id(to_id_), fin_id(fin_id_), pos(pos_) {}
@@ -16,12 +20,14 @@ public:
 	{
 		return &to_id == &a.to_id&&fin_id == a.fin_id&&pos == a.pos;
 	}
+	//返回向后移动了一格的项目
 	project next() const
 	{
 		return project(from_id, to_id, fin_id, pos + 1);
 	}
 	//void print();
 };
+//hash函数不重要
 namespace std
 {
 	template<> struct hash<project>
@@ -50,13 +56,16 @@ void gammer::read_one(unit a)
 	{
 		std::visit([this, a](auto arg) {
 			using T = std::decay_t<decltype(arg)>;
+			//如果是移进
 			if constexpr (std::is_same_v<T, shift>)
 			{
 				stack_symbol.emplace_back(a.second);
 				stack_state.emplace_back(arg.state);
 			}
+			//如果是规约
 			else if constexpr (std::is_same_v<T, specification>)
 			{
+				//调用对应的规约函数
 				any b = arg.func(stack_symbol.end() - arg.size);
 				stack_state.resize(stack_state.size() - arg.size);
 				stack_symbol.resize(stack_symbol.size() - arg.size);
@@ -82,7 +91,7 @@ void gammer::read_one(unit a)
 	}
 ;
 }
-
+//将一组产生式转发为语法分析器，state_to_map详见template.hpp
 class grammer_maker :public state_to_map<state_type, input_type>
 {
 	typedef std::unordered_map<state_index, op> state_map;
@@ -91,8 +100,8 @@ public:
 	typedef typename state_to_map<state_type, input_type>::next_map next_map;
 	std::unordered_multimap<input_type, specification_left> gram_map;
 	state_map map;
-	//std::stack<gram_tree_node> stack_id;
 	grammer_maker() = default;
+	//求first集
 	void get_first(input_type id, std::set<input_type> &set)
 	{
 		if (gram_map.find(id) == gram_map.end())
@@ -114,6 +123,7 @@ public:
 			}
 		}
 	}
+	//闭包
 	virtual void expand(state_type type, state_set &ptr)
 	{
 		if (type.pos != type.to_id.first.size())
@@ -142,12 +152,14 @@ public:
 			}
 		}
 	}
+	//状态转移
 	virtual void next(const state_set &ptr, next_map &map_)
 	{
 		for (const state_type &a : ptr)
 		{
 			if (a.to_id.first.size() == a.pos)
 			{
+				//如果移动到了末尾规约
 				specification s;
 				s.id = a.from_id;
 				s.size = a.to_id.first.size();
@@ -161,6 +173,7 @@ public:
 			}
 		}
 	}
+	//移进
 	virtual void link(const state_set &from_set, const state_set &to_set, input_type input)
 	{
 		shift s;
@@ -169,10 +182,12 @@ public:
 	}
 
 	virtual void add_state(size_t n, const state_set &ptr){}
+	//添加一个产生式并用handle作为规约函数
 	void add(input_type a, std::vector<input_type> &&b, specification_handle handler)
 	{
 		gram_map.emplace(a, std::make_pair(std::move(b), handler));
 	}
+	//生成语法分析器
 	std::shared_ptr<gammer> make_grammer(input_type root_state, specification_handle root_handle)
 	{
 		auto b = gram_map.emplace(0, std::make_pair(std::vector<size_t>({ root_state }), root_handle));
@@ -183,7 +198,7 @@ public:
 	//void read(gram_tree_node b);
 };
 
-
+//下面都不重要
 thread_local grammer_maker global_grammer_impl;
 thread_local size_t sid = 1;
 
@@ -235,15 +250,19 @@ std::shared_ptr<yacc::gammer> yacc::make_grammer(symbol sym, std::function<void(
 {
 	return make_grammer(sym,(yacc::specification_handle) [](unit_it a) {return not_use(); });
 }
-
+//一直到这里位置都不重要
+//原来测试用的现在当做例子
+//详细用法请看main.cpp
 int main_() {
+	//语法分析器用法
+	//声明文法符号
 	symbol a;
 	symbol b;
 	symbol c;
 	symbol d;
-	std::function<int(int)> func = [](int c) {
-		return 0;
-	};
+
+	//定义产生式后面的是lambda表达式相当于动态定义的函数，产生式规约时将会被调用
+	//为什么可以写成这样，是因为我重载了赋值运算符和逗号运算符
 	a = { a,b }, []() {
 		printf("ab\n");
 		return not_use();
@@ -256,11 +275,13 @@ int main_() {
 		printf("d\n");
 		return not_use();
 	};
+	//生成语法分析器
 	std::shared_ptr<gammer> asd = make_grammer(a, [](not_use a) { });
 	std::vector<unit> vec;
 	vec.push_back(std::make_pair(c.id, std::any(1)));
-	vec.push_back(std::make_pair(d.id, std::any(2)));
-	vec.push_back(std::make_pair(b.id, std::any(3)));
+	vec.push_back(std::make_pair(d.id, std::any(1)));
+	vec.push_back(std::make_pair(b.id, std::any(1)));
+	//用这个数组作为输入输出d\nca\nab\n
 	asd->read(vec.begin(), vec.end());
 	return 0;
 }

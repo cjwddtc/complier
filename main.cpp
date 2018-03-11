@@ -41,10 +41,11 @@ int main()
 	type_t<int> = int_;
 	type_t<float> = float_;
 	type_t<char> = char_;
-	//不要的词法符号懒得写制表符
-	null_symbol space(LR"(\ )");
-	null_symbol newline(LR"(\
-)");
+	//不要的词法符号
+	null_symbol space(L"\ ");
+	null_symbol newline(L"\n");
+	null_symbol newr(L"\r");
+	null_symbol newt(L"\t");
 	//通过正则表达式定义终结符
 	final_symbol type(LR"((int)|(float)|(char))");
 	final_symbol id(LR"((a-b)+)");

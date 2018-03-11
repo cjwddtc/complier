@@ -114,6 +114,7 @@ namespace yacc{
 	{
 		typedef std::unordered_map<state_index, op> state_map;
 		//状态转移表
+	public:
 		state_map map;
 		//数据栈储存每个文法符号的数据any可以储存任意类型
 		std::vector<any> stack_symbol;

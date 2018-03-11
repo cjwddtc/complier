@@ -248,3 +248,8 @@ null_symbol::null_symbol(std::wstring str)
 {
 	global_dfa.add(str, 0);
 }
+
+force_init::force_init()
+{
+	&global_dfa;
+}

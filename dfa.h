@@ -117,13 +117,17 @@ struct dfa
 
 //通过nfa创建dfa
 std::shared_ptr<dfa> make_dfa();
+//这个类由final_symbol和null_symbol继承，在保证在构造symbol对线之前全局nfa已被构造
+struct force_init {
+	force_init();
+};
 //终结符，通过词法分析器输出的符号继承自非终结符
-struct final_symbol :public symbol
+struct final_symbol :force_init,public symbol
 {
 	final_symbol(std::wstring str);
 };
 //空字符，词法分析器不会输出这些词法单元（比如空格回车等等）
-struct null_symbol :public symbol
+struct null_symbol :force_init,public symbol
 {
 	null_symbol(std::wstring str);
 };

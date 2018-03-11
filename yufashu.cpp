@@ -101,6 +101,7 @@ public:
 	std::unordered_multimap<input_type, specification_left> gram_map;
 	state_map map;
 	grammer_maker() = default;
+	///***
 	//求first集
 	void get_first(input_type id, std::set<input_type> &set)
 	{
@@ -123,6 +124,7 @@ public:
 			}
 		}
 	}
+	///***
 	//闭包
 	virtual void expand(state_type type, state_set &ptr)
 	{
@@ -152,6 +154,7 @@ public:
 			}
 		}
 	}
+	///***
 	//状态转移
 	virtual void next(const state_set &ptr, next_map &map_)
 	{
@@ -173,6 +176,7 @@ public:
 			}
 		}
 	}
+	///***
 	//移进
 	virtual void link(const state_set &from_set, const state_set &to_set, input_type input)
 	{
@@ -182,11 +186,13 @@ public:
 	}
 
 	virtual void add_state(size_t n, const state_set &ptr){}
+	///***
 	//添加一个产生式并用handle作为规约函数
 	void add(input_type a, std::vector<input_type> &&b, specification_handle handler)
 	{
 		gram_map.emplace(a, std::make_pair(std::move(b), handler));
 	}
+	///***
 	//生成语法分析器
 	std::shared_ptr<gammer> make_grammer(input_type root_state, specification_handle root_handle)
 	{

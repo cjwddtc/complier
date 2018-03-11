@@ -51,6 +51,7 @@ protected:
     {
         return all[ss];
     }
+	///***
 	//插入新状态
 	inline const state_set& insert(state_set &state)
 	{
@@ -73,6 +74,7 @@ protected:
 		}
 		return it->first;
 	}
+	///***
 	//通过一个开始状态计算整个状态转移表
     void make_map(state_type start_state)
     {

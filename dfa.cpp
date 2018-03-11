@@ -176,6 +176,7 @@ public:
 	typedef typename state_to_map<state_type, wchar_t>::next_map next_map;
 	std::unordered_map<status_index, size_t> status_map;
 	std::unordered_map<state_type, size_t> fin_status;
+	///***
 	virtual void expand(state_type id, state_set &ptr)
 	{
 		auto &stat = status[id].first;
@@ -190,6 +191,7 @@ public:
 			++b.first;
 		}
 	}
+	///***
 	virtual void next(const state_set &ptr, next_map &map)
 	{
 		for (size_t b : ptr)
@@ -202,11 +204,13 @@ public:
 			}
 		}
 	}
+	///***
 	//state_to_map在创建一条新边的时候调用
 	virtual void link(const state_set &from_set, const state_set &to_set, wchar_t ch)
 	{
 		status_map[std::make_pair(this->get_id(from_set), ch)] = this->get_id(to_set);
 	}
+	///***
 	//state_to_map在新建状态是调用
 	virtual void add_state(size_t n, const state_set &ptr)
 	{

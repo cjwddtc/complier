@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <fstream>
+
 using yacc::unit;
 using yacc::unit_it;
 using yacc::make_grammer;
@@ -42,12 +43,13 @@ int main()
 	type_t<float> = float_;
 	type_t<char> = char_;
 	//不要的词法符号
-	null_symbol space(L"\ ");
+	null_symbol space(L" ");
 	null_symbol newline(L"\n");
 	null_symbol newr(L"\r");
 	null_symbol newt(L"\t");
 	//通过正则表达式定义终结符
 	final_symbol type(LR"((int)|(float)|(char))");
+	final_symbol void_(LR"(void)");
 	final_symbol id(LR"((a-b)+)");
 	final_symbol print(LR"(print)");
 	final_symbol number(LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
@@ -57,7 +59,6 @@ int main()
 	final_symbol op2(LR"(\*|\/)");
 	final_symbol bl(LR"(\()");
 	final_symbol br(LR"(\))");
-
 	final_symbol ml(LR"(\[)");
 	final_symbol mr(LR"(\])");
 	final_symbol equal(LR"(\=)");
@@ -68,6 +69,10 @@ int main()
 	symbol array_;
 	//不支持
 	symbol unre;
+	//参数列表
+	symbol arg_list;
+	//函数
+	symbol function;
 	//乘法算式
 	symbol muti;
 	//括号
@@ -84,6 +89,7 @@ int main()
 	symbol statement;
 	//语句组
 	symbol statements;
+	//arg_list = { declartor }, []() {};
 	//数字本身是变量
 	var = { number }, [](std::wstring str) {
 		//计算数字值和分配内存空间

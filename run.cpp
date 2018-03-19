@@ -3,235 +3,204 @@
 #include <stdint.h>
 #include <stdio.h>
 // a+=b
-struct op_compute {
-  unsigned type : 4;
-  unsigned op_type : 4;
-  unsigned address_type_a : 1;
-  unsigned value_type_a : 1;
-  unsigned address_type_b : 1;
-  unsigned value_type_b : 1;
-  unsigned value_type : 4;
-};
-// flag=a|b
-struct op_logic {
-  unsigned type : 4;
-  unsigned op_type : 4;
-  unsigned address_type_a : 1;
-  unsigned value_type_a : 1;
-  unsigned address_type_b : 1;
-  unsigned value_type_b : 1;
-  unsigned value_type : 4;
-};
-// a=b
-struct op_load {
-  unsigned type : 4;
-  unsigned op_type : 4;
-  unsigned address_type_a : 1;
-  unsigned value_type_a : 1;
-  unsigned address_type_b : 1;
-  unsigned value_type_b : 1;
-  unsigned value_type : 4;
-};
-// if goto
-struct op_goto {
-  unsigned type : 4;
-  unsigned op_type : 11;
-  unsigned value_type_a : 1;
-};
-// conv
-struct op_conv {
-  unsigned type : 4;
-  unsigned address_type_a : 1;
-  unsigned value_type_a : 1;
-  unsigned address_type_b : 1;
-  unsigned value_type_b : 1;
-  unsigned type_a : 4;
-  unsigned type_b : 4;
-};
 
-union op {
-  op_compute o1;
-  op_logic o2;
-  op_load o3;
-  op_goto o4;
-  op_conv o5;
-};
 
-union type {
-  uint64_t _ui64;  // 0
-  int64_t _i64;    // 1
-  uint32_t _ui32;  // 2
-  int32_t _i32;    // 3
-  uint16_t _ui16;  // 4
-  int16_t _i16;    // 5
-  uint8_t _ui8;    // 6
-  int8_t _i8;      // 7
-  float _f;        // 8
-  double _d;       // 9
-  long double _ld; // 10
-};
+#define convert(type2, type1)                                                  \
+    *(type1*)(top + o.destiation_address) = *(type2*)(top + o.source_address);
 
-/*
-#define switch_conv(s,a1,a2,a3,a4) \
-switch (o.value_type)\
-{\
-        case 0:\
-                *(s*)a = *(a1*)a;\
-                break;\
-        case 1:\
-                *(s*)a = *(a2*)a;\
-                break;\
-        case 2:\
-                *(s*)a = *(a3*)a;\
-                break;\
-        case 3:\
-                *(s*)a = *(a4*)a;\
-                break;\
-                default:\
-                        break;\
-}\
+#define a_b_c(type, op)                                                        \
+    *(type*)(top + o.a) = *(type*)(top + o.b) op * (type*)(top + o.c);
 
-#define switch_all(s,a1,a2,a3,a4,a5,a6) \
-case s:\
-switch_conv(a1,a2,a3,a4,a5,)\
-break;\
-case s+1:\
-switch_conv(a2,a1,a3,a4,a5,)\
-break;\
-case s+2:\
-switch_conv(a3,a1,a2,a4,a5,)\
-break;\
-case s+3:\
-switch_conv(a4,a1,a2,a3,a5,)\
-break;\
-case s+4:\
-switch_conv(a5,a1,a2,a3,a4)\
-break;\
-case s+5:\
-switch_conv(a6,a1,a2,a3,a4,a5)\
-break;\
-case s+6:\
-switch (o.value_type)\
-{\
-case 0:\
-*(a5*)a = *(a6*)a; \
-break;\
-case 1:\
-*(a6*)a = *(a5*)a; \
-break;\
-}
-#define plus_size(type,i) \
-i+=sizeof(type)+1;
-*/
+#define a_b(type, op) *(type*)(top + o.a) = op * (type*)(top + o.b);
 
-void run(op *data, char *top) {
-  type a;
-  type b;
-  bool flag;
-  size_t i = 0;
-  while (true) {
-    switch (data[i].o1.type) {
-    case 0: {
-      op_compute o = data[i++].o1;
-      switch (o.op_type) {
-      case 0:
-        all_type(a_a_b, +) break;
-      case 1:
-        all_type(a_a_b, -) break;
-      case 2:
-        all_type(a_a_b, *) break;
-      case 3:
-        all_type(a_a_b, /) break;
-      case 4:
-        int_type(a_a_b, |) break;
-      case 5:
-        int_type(a_a_b, &) break;
-      case 6:
-        int_type(a_a_b, ^) break;
-      case 7:
-        int_type(a_a, ~) break;
-      case 8:
-        int_type(self_a, ++) break;
-      case 9:
-        int_type(self_a, --) break;
-      default:
-        assert(0);
-      }
-      break;
+#define self(type, op) op*(type*)(top + o.a);
+
+#define assign(type, op) *(type*)(top + o.a) = *(type*)(top + o.b);
+
+#define load(type, is_load)                                                    \
+    if (is_load)                                                               \
+        *(type*)(top + o.pos) = **(type**)(top + o.ptr);                       \
+    else                                                                       \
+        **(type**)(top + o.ptr) = *(type*)(top + o.pos);
+
+#define goto_(type, op)                                                        \
+    if (o.have_cond && *(type*)(top + o.goto_flag))                            \
+    {                                                                          \
+        i op*(uint64_t*)o.goto_address;                                        \
     }
-    case 1: {
-      op_logic o = data[i++].o2;
-      switch (o.op_type) {
-      case 0:
-        int_type(f_a_b, &&) break;
-      case 1:
-        int_type(f_a_b, ||) break;
-      case 2:
-        all_type(f_a_b, <) break;
-      case 3:
-        all_type(f_a_b, <=) break;
-      case 4:
-        all_type(f_a_b, ==) break;
-      case 5:
-        all_type(f_a_b, !=) break;
-      case 6:
-        all_type(f_a_b, >) break;
-      case 7:
-        all_type(f_a_b, >=) break;
-      case 8:
-        flag = !flag;
+
+#define EXPAND(x) x
+#define test(...) puts(#__VA_ARGS__);
+#define int_case(fun, prefix, case_id, ...)                                    \
+    case case_id + 0:                                                          \
+        EXPAND(fun(prefix##nt8_t, __VA_ARGS__))                                \
+        break;                                                                 \
+    case case_id + 1:                                                          \
+        EXPAND(fun(prefix##nt16_t, __VA_ARGS__))                               \
+        break;                                                                 \
+    case case_id + 2:                                                          \
+        EXPAND(fun(prefix##nt32_t, __VA_ARGS__))                               \
+        break;                                                                 \
+    case case_id + 3:                                                          \
+        EXPAND(fun(prefix##nt64_t, __VA_ARGS__))                               \
         break;
-      default:
-        assert(0);
-      }
+
+#define all_type(fun, ...)                                                     \
+    switch (o.value_type)                                                      \
+    {                                                                          \
+        EXPAND(int_case(fun, ui, 0, __VA_ARGS__))                              \
+        EXPAND(int_case(fun, i, 4, __VA_ARGS__))                               \
+        case 8:                                                                \
+            EXPAND(fun(float, __VA_ARGS__))                                    \
+            break;                                                             \
+        case 9:                                                                \
+            EXPAND(fun(double, __VA_ARGS__))                                   \
+            break;                                                             \
+        case 10:                                                               \
+            EXPAND(fun(long double, __VA_ARGS__))                              \
+            break;                                                             \
     }
-    case 2: {
-      op_load o = data[i++].o3;
-      switch (o.op_type) {
-      case 0:
-        all_type(assign, a, a) break;
-      case 1:
-        all_type(assign, a, b) break;
-      case 2:
-        all_type(assign, b, a) break;
-      case 3:
-        all_type(assign, b, b) break;
-      case 4:
-        all_type(assign_to_flag, a) break;
-      case 5:
-        all_type(assign_to_flag, b) break;
-      case 6:
-        all_type(assign_from_flag, a) break;
-      case 7:
-        all_type(assign_from_flag, b) break;
-      }
+
+#define int_case_(fun, prefix, case_id, ...)                                   \
+    case case_id + 0:                                                          \
+        EXPAND(fun(prefix##nt8_t, __VA_ARGS__))                                \
+        break;                                                                 \
+    case case_id + 1:                                                          \
+        EXPAND(fun(prefix##nt16_t, __VA_ARGS__))                               \
+        break;                                                                 \
+    case case_id + 2:                                                          \
+        EXPAND(fun(prefix##nt32_t, __VA_ARGS__))                               \
+        break;                                                                 \
+    case case_id + 3:                                                          \
+        EXPAND(fun(prefix##nt64_t, __VA_ARGS__))                               \
+        break;
+
+#define all_type_(type1, type2, fun)                                           \
+    switch (type1)                                                             \
+    {                                                                          \
+        EXPAND(int_case_(all_type__, ui, 0, type2, fun))                       \
+        EXPAND(int_case_(all_type__, i, 4, type2, fun))                        \
+        case 8:                                                                \
+            EXPAND(all_type__(float, type2, fun))                              \
+            break;                                                             \
+        case 9:                                                                \
+            EXPAND(all_type__(double, type2, fun))                             \
+            break;                                                             \
+        case 10:                                                               \
+            EXPAND(all_type__(long double, type2, fun))                        \
+            break;                                                             \
     }
-    case 3: {
-      op_goto o = data[i++].o4;
-      switch (o.op_type) {
-      case 0:
-        i = o.value_type_a ? a._ui64 : *(uint64_t *)(data + i);
-        break;
-      case 1:
-        i += o.value_type_a ? a._ui64 : *(uint64_t *)(data + i);
-        break;
-      case 2:
-        if (flag) {
-          i = o.value_type_a ? a._ui64 : *(uint64_t *)(data + i);
+
+#define all_type__(type1, type2, fun)                                          \
+    switch (type2)                                                             \
+    {                                                                          \
+        EXPAND(int_case(fun, ui, 0, type1))                                    \
+        EXPAND(int_case(fun, i, 4, type1))                                     \
+        case 8:                                                                \
+            EXPAND(fun(float, type1))                                          \
+            break;                                                             \
+        case 9:                                                                \
+            EXPAND(fun(double, type1))                                         \
+            break;                                                             \
+        case 10:                                                               \
+            EXPAND(fun(long double, type1))                                    \
+            break;                                                             \
+    }
+
+#define int_type(fun, ...)                                                     \
+    switch (o.value_type)                                                      \
+    {                                                                          \
+        EXPAND(int_case(fun, ui, 0, __VA_ARGS__))                              \
+        EXPAND(int_case(fun, i, 4, __VA_ARGS__))                               \
+    }
+
+void run(op* data, char* top)
+{
+    size_t i = 0;
+    while (true)
+    {
+        switch (data[i].o1.op_type)
+        {
+            case 0:
+            {
+                op_3 o = data[i++].o1;
+                switch (o.op_type)
+                {
+                    case 0:
+                        all_type(a_b_c, +) break;
+                    case 1:
+                        all_type(a_b_c, -) break;
+                    case 2:
+                        all_type(a_b_c, *) break;
+                    case 3:
+                        all_type(a_b_c, /) break;
+                    case 4:
+                        int_type(a_b_c, |) break;
+                    case 5:
+                        int_type(a_b_c, &) break;
+                    case 6:
+                        int_type(a_b_c, ^) break;
+                    case 7:
+                        int_type(a_b, ~) break;
+                    case 8:
+                        int_type(self, ++) break;
+                    case 9:
+                        int_type(self, --) break;
+                    case 10:
+                        int_type(a_b_c, &&) break;
+                    case 11:
+                        int_type(a_b_c, ||) break;
+                    case 12:
+                        all_type(a_b_c, <) break;
+                    case 13:
+                        all_type(a_b_c, <=) break;
+                    case 14:
+                        all_type(a_b_c, ==) break;
+                    case 15:
+                        all_type(a_b_c, !=) break;
+                    case 16:
+                        all_type(a_b_c, >) break;
+                    case 17:
+                        all_type(a_b_c, >=) break;
+                    case 18:
+                        all_type(assign, null) break;
+                    default:
+                        assert(0);
+                }
+                break;
+            }
+            case 1:
+            {
+                op_ptr o = data[i++].o4;
+                if (o.is_immediate)
+                {
+                    *(int64_t*)o.pos = o.ptr;
+                }
+                else
+                {
+                    all_type(load, o.load_type)
+                }
+                break;
+            }
+            case 2:
+            {
+                op_conv o = data[i++].o5;
+                all_type_(o.destiation_type, o.source_type, convert) break;
+            }
+            case 3:
+            {
+                op_goto o = data[i++].o2;
+                if (o.is_relative)
+                {
+                    all_type(goto_, +=)
+                }
+                else
+                {
+                    all_type(goto_, =)
+                }
+            }
         }
-      case 3:
-        if (flag) {
-          i += o.value_type_a ? a._ui64 : *(uint64_t *)(data + i);
-        }
-        break;
-      }
     }
-    case 4: {
-      op_conv o = data[i++].o5;
-      all_type_(o.type_a, o.type_b, convert, _)
-    }
-    }
-  }
 fin:;
 }
 

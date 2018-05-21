@@ -1,7 +1,7 @@
 #include "dfa.h"
 #include <map>
 #include <algorithm>
-
+using output_type=yacc::input_type;
 class nfa
 {
 	//nfa的状态转移的输入或者说边optional表示可以包含wchar_t也可能为空，为空时表示为空边（可以直接转化）
@@ -10,11 +10,11 @@ class nfa
 	typedef std::unordered_multimap<input_type, size_t> edge_map;
 	//这个optional表示此状态是否为可结束状态，如果是此optional储存结束时输出的词法单元id
 	//这两个组合在一起作为nfa的状态
-	typedef std::pair<edge_map, std::optional<size_t>> nfa_status;
+	typedef std::pair<edge_map, std::optional<output_type>> nfa_status;
 	//当前正则的id,生成nfa是使用
-	size_t c_id;
+	output_type c_id;
 	//nfa状态数组
-	std::unordered_map<wchar_t, symbol> id_map;
+	std::unordered_map<wchar_t, symbol_impl> id_map;
 	//解析正则表达式的语法分析器
 	std::shared_ptr<grammer> reggm;
 	//创建一个nfa状态返回其在数组中的索引
@@ -24,7 +24,7 @@ class nfa
 		return status.size() - 1;
 	}
 	//设置一个nfa状态为可结束状态,结束时输出位name，该状态在数组中的索引为id
-	void set_name(size_t id, size_t name)
+	void set_name(size_t id, output_type name)
 	{
 		status[id].second = name;
 	}
@@ -39,7 +39,7 @@ protected:
 public:
 	nfa();
 	//讲一个正则表达式添加到nfa中
-	void add(std::wstring str, size_t id);
+	void add(std::wstring str, std::string id);
 };
 namespace std
 {
@@ -60,20 +60,20 @@ nfa::nfa()
 {
 	//这个语句主要是避开0状态作为初始状态
 	create_status();
-	symbol char_;//regularchar
-	symbol minus;//-
-	symbol left_small;//(
-	symbol right_small;//)
-	symbol star;//*
-	symbol plus;//+
-	symbol question;//?
-	symbol backslash;//反斜杠
-	symbol or_ ;//|
-	symbol backslash_exp;//\a 
-	symbol backet_exp;//(a)
-	symbol repeat_exp;//*+?a
-	symbol or_exp;//a|b
-	symbol to_exp;//a-b
+	symbol(char_);//regularchar
+	symbol(minus);//-
+	symbol(left_small);//(
+	symbol(right_small);//)
+	symbol(star);//*
+	symbol(plus);//+
+	symbol(question);//?
+	symbol(backslash);//反斜杠
+	symbol(or_) ;//|
+	symbol(backslash_exp);//\a 
+	symbol(backet_exp);//(a)
+	symbol(repeat_exp);//*+?a
+	symbol(or_exp);//a|b
+	symbol(to_exp);//a-b
 	id_map.emplace(L'(',left_small);
 	id_map.emplace(L')', right_small);
 	id_map.emplace(L'*', star);
@@ -147,8 +147,8 @@ nfa::nfa()
 		set_name(b.second, c_id);
 	});
 }
-
-void nfa::add(std::wstring str, size_t id)
+const std::string char_string = "char_";
+void nfa::add(std::wstring str, std::string id)
 {
 	std::vector<unit> m;
 	m.reserve(str.size());
@@ -159,7 +159,7 @@ void nfa::add(std::wstring str, size_t id)
 			return unit(it->second.id, std::any(ch));
 		}
 		else {
-			return unit(1uLL, std::any(ch));
+			return unit("char_", std::any(ch));
 		}
 	});
 	c_id=id;
@@ -175,7 +175,7 @@ public:
 	typedef typename state_to_map<state_type, wchar_t>::state_set state_set;
 	typedef typename state_to_map<state_type, wchar_t>::next_map next_map;
 	std::unordered_map<status_index, size_t> status_map;
-	std::unordered_map<state_type, size_t> fin_status;
+	std::unordered_map<state_type, output_type> fin_status;
 	///***
 	virtual void expand(state_type id, state_set &ptr)
 	{
@@ -238,19 +238,19 @@ std::shared_ptr<dfa> make_dfa()
 	return global_dfa.make_dfa();
 }
 
-final_symbol::final_symbol(std::wstring str)
+final_symbol_impl::final_symbol_impl(std::wstring str,std::string id):symbol_impl(id)
 {
 	global_dfa.add(str, this->id);
 }
 
-dfa::dfa(std::unordered_map<status_index, size_t>&& m, std::unordered_map<state_type, size_t>&& f)
+dfa::dfa(std::unordered_map<status_index, size_t>&& m, std::unordered_map<state_type, output_type>&& f)
 	:status_map(std::move(m)),fin_status(std::move(f))
 {
 }
 
-null_symbol::null_symbol(std::wstring str)
+null_symbol_impl::null_symbol_impl(std::wstring str):symbol_impl(std::string(ignore_id))
 {
-	global_dfa.add(str, 0);
+	global_dfa.add(str, std::string(ignore_id));
 }
 
 force_init::force_init()

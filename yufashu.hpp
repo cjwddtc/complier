@@ -15,21 +15,38 @@
 
 //lr1项目
 namespace yacc {
+	constexpr std::string_view fin_id = "__end__";
+	constexpr std::string_view root_id = "__root__";
 	using ::std::pair;
 	using ::std::vector;
 	using ::std::function;
 	using ::std::any;
 	using ::std::variant;
 	//输入为文法符号id
-	typedef size_t input_type;
+	typedef std::string input_type;
 	//产生式右侧和语法制导翻译的函数
 	//每个文法符号都有一个值用于语法制导翻译由于类型不同存为any
-	typedef pair<const size_t, any> unit;
+	typedef pair<input_type, any> unit;
 	typedef vector<any>::iterator unit_it;
 	//规约时的触发函数
 	typedef function<any(unit_it start)> specification_handle;
 	//一个产生式的左端
-	typedef pair<vector<input_type>, specification_handle> specification_left;
+	struct symbol_impl;
+	struct pass_by;
+	struct specification_left
+	{
+		vector<input_type> values;
+		specification_handle handler;
+		uint64_t level;
+		specification_left &operator,(pass_by p);
+		template <class T>
+		specification_left &operator,(T han)
+		{
+			handler = [han](unit_it a) {
+				return tmp::invoke(tmp::FFL(han), a); };
+			return *this;
+		}
+	};
 	//移进
 	struct shift
 	{
@@ -45,7 +62,7 @@ namespace yacc {
 	//移近或是规约
 	typedef variant<shift, specification> op;
 	//状态转移表的索引（当前状态，输入文法符号
-	typedef pair<size_t, size_t> state_index;
+	typedef pair<size_t, input_type> state_index;
 	//工具类不重要
 	struct not_use {};
 }
@@ -60,11 +77,13 @@ namespace std
 		result_type operator()(argument_type const& s) const noexcept
 		{
 			result_type const h1(std::hash<size_t>{}(s.first));
-			result_type const h2(std::hash<size_t>{}(s.second));
+			result_type const h2(std::hash<yacc::input_type>{}(s.second));
 			return h1 ^ h2;
 		}
 	};
 }
+#include <iostream>
+#define symbol(a) symbol_impl a(#a)
 //工具类通过一些奇技淫巧简化代码编写，不重要
 namespace tmp
 {
@@ -135,7 +154,7 @@ namespace yacc{
 			{
 				read_one(*start++);
 			}
-			read_one(std::make_pair(-1, std::any()));
+			read_one(std::make_pair(std::string(yacc::fin_id), std::any()));
 		}
 	};
 	//辅助类表示这次规约只是单纯的将第n个被规约符号的数据作为规约成的新文法符号的数据
@@ -144,34 +163,19 @@ namespace yacc{
 		size_t n;
 		pass_by(size_t m);
 	};
-	//辅助类用于实现特殊的写法
-	class binder
-	{
-		std::vector<input_type> symbols;
-		input_type id;
-		void add(specification_handle han);
-	public:
-		binder(input_type id_, std::vector<input_type> &&syms);
-		void operator,(pass_by p);
-		template <class T>
-		void operator,(T han)
-		{
-			add([han](unit_it a) {return tmp::invoke(tmp::FFL(han), a); });
-		}
-	};
 	//文法符号
-	struct symbol
+	struct symbol_impl
 	{
-		size_t id;
-		symbol();
+		std::string id;
+		symbol_impl(std::string name);
 		//通过赋值运算符表示一个产生式具体用法见cpp文件末尾的main_文件
-		binder operator=(std::initializer_list<symbol> symbols);
-		bool operator==(const symbol &)const;
+		specification_left &operator=(const std::initializer_list<symbol_impl> &lil);
+		bool operator==(const symbol_impl &)const;
 	};
 	//下面全部都是一些特殊的奇技淫巧，不重要，主要是根据用户传入的函数自动的将对应的类型从any中取出
-	std::shared_ptr<gammer> make_grammer(symbol sym, specification_handle root_handle);
+	std::shared_ptr<gammer> make_grammer(symbol_impl sym, specification_handle root_handle);
 	template <class T>
-	std::shared_ptr<gammer> make_grammer(symbol sym, std::function<void(T)> root_handle)
+	std::shared_ptr<gammer> make_grammer(symbol_impl sym, std::function<void(T)> root_handle)
 	{
 		specification_handle b = [root_handle](unit_it i) {
 			root_handle(std::any_cast<T>(*i));
@@ -179,9 +183,9 @@ namespace yacc{
 		};
 		return make_grammer(sym, b);
 	}
-	std::shared_ptr<gammer> make_grammer(symbol sym, std::function<void(not_use)> root_handle);
+	std::shared_ptr<gammer> make_grammer(symbol_impl sym, std::function<void(not_use)> root_handle);
 	template <class T>
-	std::shared_ptr<gammer> make_grammer(symbol sym, T root_handle)
+	std::shared_ptr<gammer> make_grammer(symbol_impl sym, T root_handle)
 	{
 		return make_grammer(sym,tmp::FFL(root_handle));
 	}

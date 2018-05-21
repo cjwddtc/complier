@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include "yufashu.hpp"
+#include <iterator>
 using namespace yacc;
 //lr(1)项目
 class project
@@ -36,7 +37,7 @@ namespace std
 		typedef std::size_t result_type;
 		result_type operator()(argument_type const& s) const noexcept
 		{
-			result_type const h2(std::hash<size_t>{}(s.fin_id));
+			result_type const h2(std::hash<input_type>{}(s.fin_id));
 			result_type const h3(std::hash<const char*>{}((const char *)&s.to_id));
 			result_type const h4(std::hash<size_t>{}(s.pos));
 			return h2 ^ h3^h4;
@@ -69,8 +70,7 @@ void gammer::read_one(unit a)
 				any b = arg.func(stack_symbol.end() - arg.size);
 				stack_state.resize(stack_state.size() - arg.size);
 				stack_symbol.resize(stack_symbol.size() - arg.size);
-				//stack_state.erase(stack_state.end() - arg.size, stack_state.end());
-				if (arg.id == 0 && a.first == -1)
+				if (arg.id == root_id && a.first == fin_id)
 				{
 					stack_state.clear();
 					stack_state.emplace_back(0);
@@ -115,11 +115,11 @@ public:
 			bool flag = true;
 			for (auto it = itp.first; it != itp.second; it++)
 			{
-				if (it->second.first.front() == id) {
+				if (it->second.values.front() == id) {
 					continue;
 				}
 				else {
-					get_first(it->second.first.front(), set);
+					get_first(it->second.values.front(), set);
 				}
 			}
 		}
@@ -128,17 +128,17 @@ public:
 	//闭包
 	virtual void expand(state_type type, state_set &ptr)
 	{
-		if (type.pos != type.to_id.first.size())
+		if (type.pos != type.to_id.values.size())
 		{
-			input_type other = type.to_id.first[type.pos];
+			input_type other = type.to_id.values[type.pos];
 			auto itp = gram_map.equal_range(other);
 			std::set<input_type> set;
-			if (type.pos + 1 == type.to_id.first.size())
+			if (type.pos + 1 == type.to_id.values.size())
 			{
 				set.insert(type.fin_id);
 			}
 			else {
-				get_first(type.to_id.first[type.pos + 1], set);
+				get_first(type.to_id.values[type.pos + 1], set);
 			}
 			for (auto it = itp.first; it != itp.second; it++)
 			{
@@ -160,18 +160,18 @@ public:
 	{
 		for (const state_type &a : ptr)
 		{
-			if (a.to_id.first.size() == a.pos)
+			if (a.to_id.values.size() == a.pos)
 			{
 				//如果移动到了末尾规约
 				specification s;
 				s.id = a.from_id;
-				s.size = a.to_id.first.size();
-				s.func = a.to_id.second;
+				s.size = a.to_id.values.size();
+				s.func = a.to_id.handler;
 				map[std::make_pair(this->get_id(ptr), a.fin_id)] = s;
 			}
 			else
 			{
-				auto b = a.to_id.first[a.pos];
+				auto b = a.to_id.values[a.pos];
 				map_[b].insert(a.next());
 			}
 		}
@@ -188,16 +188,19 @@ public:
 	virtual void add_state(size_t n, const state_set &ptr){}
 	///***
 	//添加一个产生式并用handle作为规约函数
-	void add(input_type a, std::vector<input_type> &&b, specification_handle handler)
+	specification_left &add(input_type a)
 	{
-		gram_map.emplace(a, std::make_pair(std::move(b), handler));
+		return gram_map.emplace(a,specification_left())->second;
 	}
 	///***
 	//生成语法分析器
 	std::shared_ptr<gammer> make_grammer(input_type root_state, specification_handle root_handle)
 	{
-		auto b = gram_map.emplace(0, std::make_pair(std::vector<size_t>({ root_state }), root_handle));
-		this->make_map(project(0, b->second, -1));
+		specification_left l;
+		l.values.emplace_back(root_state);
+		l.handler = root_handle;
+		auto b = gram_map.emplace(root_id, l);
+		this->make_map(project(std::string(root_id), b->second, std::string(fin_id)));
 		gram_map.clear();
 		return std::make_shared<gammer>(std::move(map));
 	}
@@ -208,64 +211,59 @@ public:
 thread_local grammer_maker global_grammer_impl;
 thread_local size_t sid = 1;
 
-std::shared_ptr<gammer> yacc::make_grammer(symbol sym, specification_handle root_handle)
+std::shared_ptr<gammer> yacc::make_grammer(symbol_impl sym, specification_handle root_handle)
 {
 	sid = 1;
 	return global_grammer_impl.make_grammer(sym.id, root_handle);
 }
 
 
-symbol::symbol():id(sid++)
+symbol_impl::symbol_impl(std::string name):id(name)
 {
 }
 
-binder symbol::operator=(std::initializer_list<symbol> symbols)
+specification_left &symbol_impl::operator=(const std::initializer_list<symbol_impl> &symbols)
 {
+	auto &l = global_grammer_impl.add(id);;
 	std::vector<input_type> vec(symbols.size());
-	std::transform(symbols.begin(), symbols.end(), vec.begin(), [](auto a) {return a.id; });
-	return binder(id,std::move(vec));
+	l.values.reserve(symbols.size());
+	std::transform(symbols.begin(), symbols.end(), std::back_inserter(l.values), [](auto a) {return a.id; });
+	return l;
 }
 
-bool symbol::operator==(const symbol &o) const
+bool symbol_impl::operator==(const symbol_impl &o) const
 {
 	return id==o.id;
 }
 
-binder::binder(input_type id_, std::vector<input_type>&& syms):id(id_), symbols(std::move(syms))
+specification_left &yacc::specification_left::operator,(pass_by p)
 {
 	
-}
-
-void yacc::binder::operator,(pass_by p)
-{
 	if (p.n == -1) {
-		add([](unit_it b) {return not_use(); });
+		handler = [](unit_it b) {return not_use(); };
 	}
 	else {
-		add([a = p.n](unit_it b){return b[a]; });
+		handler = [a = p.n](unit_it b){return b[a]; };
 	}
+	return *this;
 }
 
 
-void binder::add(specification_handle han)
-{
-	global_grammer_impl.add(id, std::move(symbols), han);
-}
-
-std::shared_ptr<yacc::gammer> yacc::make_grammer(symbol sym, std::function<void(not_use)> root_handle)
+std::shared_ptr<yacc::gammer> yacc::make_grammer(symbol_impl sym, std::function<void(not_use)> root_handle)
 {
 	return make_grammer(sym,(yacc::specification_handle) [](unit_it a) {return not_use(); });
 }
+/*
 //一直到这里位置都不重要
 //原来测试用的现在当做例子
 //详细用法请看main.cpp
 int main_() {
 	//语法分析器用法
 	//声明文法符号
-	symbol a;
-	symbol b;
-	symbol c;
-	symbol d;
+	symbol_dec(a);
+	symbol_dec(b);
+	symbol_dec(c);
+	symbol_dec(d);
 
 	//定义产生式后面的是lambda表达式相当于动态定义的函数，产生式规约时将会被调用
 	//为什么可以写成这样，是因为我重载了赋值运算符和逗号运算符
@@ -291,7 +289,7 @@ int main_() {
 	asd->read(vec.begin(), vec.end());
 	return 0;
 }
-
+*/
 yacc::pass_by::pass_by(size_t m):n(m)
 {
 }

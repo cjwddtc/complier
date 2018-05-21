@@ -12,9 +12,9 @@
 
 #include "yufashu.hpp"
 using grammer = yacc::gammer;
-using yacc::symbol;
+using yacc::symbol_impl;
 using yacc::unit;
-
+using output_type = yacc::input_type;
 
 typedef size_t state_type;
 typedef std::pair<state_type, wchar_t> status_index;
@@ -30,13 +30,14 @@ namespace std
 	};
 }
 
+constexpr std::string_view ignore_id = "__ignore__";
 struct dfa
 {
 	//状态转移表
 	std::unordered_map<status_index, size_t> status_map;
 	//可结束状态表(在这些状态是接受不可接受输入视为解析到一个词法单元
-	std::unordered_map<state_type, size_t> fin_status;
-	dfa(std::unordered_map<status_index, size_t> &&m, std::unordered_map<state_type, size_t> &&f);
+	std::unordered_map<state_type, output_type> fin_status;
+	dfa(std::unordered_map<status_index, size_t> &&m, std::unordered_map<state_type, output_type> &&f);
 	//使用了一些特殊的奇技淫巧实现了将一对字符流迭代器转化成词法符号迭代器并直接传给语法分析器，不重要
 	template <class IT>
 	struct word_iterator
@@ -46,7 +47,7 @@ struct dfa
 		dfa *d;
 		size_t current_status;
 		std::wstring value;
-		size_t id;
+		output_type id;
 		word_iterator(IT start_, IT end_, dfa *f):
 			cu(start_), end(end_), d(f),current_status(0){
 			if (cu == end) current_status = -1;
@@ -64,7 +65,7 @@ struct dfa
 			if (it != d->fin_status.end()) {
 				id = it->second;
 				current_status = 0;
-				if (id == 0) {
+				if (id == ignore_id) {
 					operator++();
 				}
 				return *this;
@@ -122,12 +123,14 @@ struct force_init {
 	force_init();
 };
 //终结符，通过词法分析器输出的符号继承自非终结符
-struct final_symbol :force_init,public symbol
+struct final_symbol_impl :force_init,public symbol_impl
 {
-	final_symbol(std::wstring str);
+	final_symbol_impl(std::wstring str,std::string id);
 };
 //空字符，词法分析器不会输出这些词法单元（比如空格回车等等）
-struct null_symbol :force_init,public symbol
+struct null_symbol_impl :force_init,public symbol_impl
 {
-	null_symbol(std::wstring str);
+	null_symbol_impl(std::wstring str);
 };
+#define final_symbol(a,b) final_symbol_impl a(b,#a)
+#define null_symbol(a,b) null_symbol_impl a(b)

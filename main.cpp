@@ -42,48 +42,48 @@ int main()
 	type_t<float> = float_;
 	type_t<char> = char_;
 	//不要的词法符号
-	null_symbol space(L"\ ");
-	null_symbol newline(L"\n");
-	null_symbol newr(L"\r");
-	null_symbol newt(L"\t");
+	null_symbol(space,L"\ ");
+	null_symbol(newline,L"\n");
+	null_symbol(newr,L"\r");
+	null_symbol(newt,L"\t");
 	//通过正则表达式定义终结符
-	final_symbol type(LR"((int)|(float)|(char))");
-	final_symbol id(LR"((a-b)+)");
-	final_symbol print(LR"(print)");
-	final_symbol number(LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
-	final_symbol int_number(LR"((1-9)(0-9)*)");
-	final_symbol ar(LR"(\-\>)");
-	final_symbol op1(LR"(\+|\-)");
-	final_symbol op2(LR"(\*|\/)");
-	final_symbol bl(LR"(\()");
-	final_symbol br(LR"(\))");
+	final_symbol(type,LR"((int)|(float)|(char))");
+	final_symbol(id,LR"((a-b)+)");
+	final_symbol(print,LR"(print)");
+	final_symbol(number,LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
+	final_symbol(int_number,LR"((1-9)(0-9)*)");
+	final_symbol(ar,LR"(\-\>)");
+	final_symbol(op1,LR"(\+|\-)");
+	final_symbol(op2,LR"(\*|\/)");
+	final_symbol(bl,LR"(\()");
+	final_symbol(br,LR"(\))");
 
-	final_symbol ml(LR"(\[)");
-	final_symbol mr(LR"(\])");
-	final_symbol equal(LR"(\=)");
-	final_symbol sep(LR"(;)");
+	final_symbol(ml,LR"(\[)");
+	final_symbol(mr,LR"(\])");
+	final_symbol(equal,LR"(\=)");
+	final_symbol(sep,LR"(;)");
 
 	//下面是非终结符
 	//数组还不支持
-	symbol array_;
+	symbol(array_);
 	//不支持
-	symbol unre;
+	symbol(unre);
 	//乘法算式
-	symbol muti;
+	symbol(muti);
 	//括号
-	symbol backet;
+	symbol(backet);
 	//加减算式
-	symbol plus;
+	symbol(plus);
 	//赋值算式
-	symbol assign;
+	symbol(assign);
 	//变量
-	symbol var;
+	symbol(var);
 	//声明语句
-	symbol declartor;
+	symbol(declartor);
 	//语句
-	symbol statement;
+	symbol(statement);
 	//语句组
-	symbol statements;
+	symbol(statements);
 	//数字本身是变量
 	var = { number }, [](std::wstring str) {
 		//计算数字值和分配内存空间
@@ -228,7 +228,7 @@ else print_type(char,c,a)
 	auto a = make_dfa();
 	auto b = make_grammer(statements, [](not_use a) {});
 	//读取并执行test.txt的内容
-	std::wifstream ff("test.txt");
+	std::wifstream ff("D:\\test.txt");
 	auto it = a->read(std::istreambuf_iterator<wchar_t>(ff), std::istreambuf_iterator<wchar_t>());
 	b->read(it.first, it.second);
 	return 0;

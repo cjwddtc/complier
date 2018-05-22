@@ -47,8 +47,8 @@ int main()
 	null_symbol(newr,L"\r");
 	null_symbol(newt,L"\t");
 	//通过正则表达式定义终结符
-	final_symbol(type,LR"((int)|(float)|(char))");
-	final_symbol(id,LR"((a-b)+)");
+	final_symbol(id, LR"((a-z)+)");
+	final_symbol(type,LR"(int|float|char)");
 	final_symbol(print,LR"(print)");
 	final_symbol(number,LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
 	final_symbol(int_number,LR"((1-9)(0-9)*)");
@@ -68,24 +68,14 @@ int main()
 	symbol(array_);
 	//不支持
 	symbol(unre);
-	//乘法算式
-	symbol(muti);
-	//括号
-	symbol(backet);
-	//加减算式
-	symbol(plus);
-	//赋值算式
-	symbol(assign);
 	//变量
-	symbol(var);
-	//声明语句
-	symbol(declartor);
+	symbol(exp);
 	//语句
 	symbol(statement);
 	//语句组
 	symbol(statements);
 	//数字本身是变量
-	var = { number }, [](std::wstring str) {
+	exp = { number }, [](std::wstring str) {
 		//计算数字值和分配内存空间
 		*(float*)(c + c_pos)=std::stod(str);
 		var_info a;
@@ -94,7 +84,7 @@ int main()
 		c_pos += sizeof(int);
 		return a;
 	};
-	var = { int_number }, [](std::wstring str) {
+	exp = { int_number }, [](std::wstring str) {
 		//计算数字值和分配内存空间（整形）
 		*(int*)(c + c_pos) = std::stoi(str);
 		var_info a;
@@ -103,7 +93,7 @@ int main()
 		c_pos += sizeof(int);
 		return a;
 	};
-	var = {id}, [](std::wstring str) {
+	exp = {id}, [](std::wstring str) {
 		//从符号表中查找
 		auto a = symbol_map.find(str);
 		if (a == symbol_map.end()) {
@@ -114,7 +104,7 @@ int main()
 		}
 	};
 	//声明语句
-	declartor = { type,id ,sep }, [](std::wstring str,std::wstring id) {
+	statement = { type,id ,sep }, [](std::wstring str,std::wstring id) {
 		auto a = symbol_map.find(str);
 		if (a != symbol_map.end()) {
 			throw L"redeclare id " + str;
@@ -139,9 +129,7 @@ int main()
 		return b;
 	};
 	//这个pass_by表示规约后，被规约的第二个符号backet的值直接赋给规程成的backet
-	backet = { bl,backet,br }, pass_by(1);
-	//这个pass_by同理
-	backet = { var }, pass_by(0);
+	exp = { bl,exp,br }, pass_by(1);
 #define __var(type,b) (*(type*)(c+b.pos))
 
 #define type_op(type,op,a,b) \
@@ -153,8 +141,7 @@ if(a.types==type_t<type>){\
 	else type_op(int, op, a, b)\
 	else type_op(char, op, a, b)\
 
-	muti = { backet }, pass_by(0);
-	muti={ muti,op2,muti }, [](var_info a,std::wstring op,var_info b) {
+	exp ={ exp,op2,exp }, [](var_info a,std::wstring op,var_info b) {
 		if (a.types == b.types) {
 			var_info t;
 			t.pos = 0;
@@ -174,8 +161,7 @@ if(a.types==type_t<type>){\
 			throw L"same type can operate";
 		}
 	};
-	plus ={muti}, pass_by(0);
-	plus = { plus,op1,plus }, [](var_info a, std::wstring  op, var_info b) {
+	exp = { exp,op1,exp }, [](var_info a, std::wstring  op, var_info b) {
 		if (a.types == b.types) {
 			var_info t;
 			t.pos = 0;
@@ -195,11 +181,11 @@ if(a.types==type_t<type>){\
 			throw L"same type can operate";
 		}
 	};
-	assign = { plus }, pass_by(0);
-	assign = { var,equal,plus,sep }, [](var_info a, not_use, var_info b) {
+	exp = { exp,equal,exp }, [](var_info a, not_use, var_info b) {
 		if (a.types == b.types) {
 			var_info t;
 			t.pos = 0;
+			t.types = a.types;
 			op_run(=, a, b)
 			return t;
 		}
@@ -207,7 +193,7 @@ if(a.types==type_t<type>){\
 			throw L"same type can operate";
 		}
 	};
-	statement = { assign }, pass_by(-1);
+	statement = { exp,sep }, pass_by(-1);
 #define print_type(type,f,a) \
 if(a.types==type_t<type>){\
 	printf("%"#f"\n",__var(type,a));\
@@ -217,19 +203,36 @@ print_type(float,f,a)\
 else print_type(int,d,a)\
 else print_type(char,c,a)
 	//打印语句，这里not_use表示并不需要这个文法符号的数据
-	statement = { print,plus,sep }, [](not_use, var_info a) {
+	statement = { print,exp,sep }, [](not_use, var_info a) {
 		print_all_type(a)
 		return not_use();
 	};
 	//pass_by传-1表示不生成数据
-	statement = { declartor }, pass_by(-1);
+	statement = { exp }, pass_by(-1);
 	statements = { statement }, pass_by(-1);
 	statements = { statements,statement }, pass_by(-1);
 	auto a = make_dfa();
+	bflag = 1;
 	auto b = make_grammer(statements, [](not_use a) {});
 	//读取并执行test.txt的内容
 	std::wifstream ff("D:\\test.txt");
 	auto it = a->read(std::istreambuf_iterator<wchar_t>(ff), std::istreambuf_iterator<wchar_t>());
 	b->read(it.first, it.second);
+	getchar();
+	return 0;
+}
+
+int main_() {
+
+	final_symbol(number, LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
+	final_symbol(sep, LR"(;)");
+	auto a = make_dfa();
+	std::vector<char> vec;
+	vec.push_back('5');
+	vec.push_back('5');
+	vec.push_back('.');
+	vec.push_back('4');
+	vec.push_back(';');
+	a->read(vec.begin(), vec.end());
 	return 0;
 }

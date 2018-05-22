@@ -1,6 +1,7 @@
 //语法分析器
 #pragma once
-#include <unordered_map>
+//#include <unordered_map>
+#include <map>
 #include <vector>
 #include <memory>
 #include <string>
@@ -33,10 +34,14 @@ namespace yacc {
 	//一个产生式的左端
 	struct symbol_impl;
 	struct pass_by;
+	struct right_combin {};
 	struct specification_left
 	{
+		//产生是右端的符号
 		vector<input_type> values;
+		//规约处理函数
 		specification_handle handler;
+		//优先级，其中除了最低位bit以外表示优先级,越小优先级越高，最低位表示是否为有结合或者说在同一优先级下发生移进规约冲突时是否移进
 		uint64_t level;
 		specification_left &operator,(pass_by p);
 		template <class T>
@@ -46,6 +51,7 @@ namespace yacc {
 				return tmp::invoke(tmp::FFL(han), a); };
 			return *this;
 		}
+		specification_left &operator,(right_combin);
 	};
 	//移进
 	struct shift
@@ -82,7 +88,7 @@ namespace std
 		}
 	};
 }
-#include <iostream>
+//将变量名作为符号的名字
 #define symbol(a) symbol_impl a(#a)
 //工具类通过一些奇技淫巧简化代码编写，不重要
 namespace tmp
@@ -127,11 +133,12 @@ namespace tmp
 		return func;
 	}
 }
+#include <iostream>
 namespace yacc{
 	//词法分析器
 	class gammer
 	{
-		typedef std::unordered_map<state_index, op> state_map;
+		typedef std::map<state_index, op> state_map;
 		//状态转移表
 	public:
 		state_map map;
@@ -156,6 +163,7 @@ namespace yacc{
 			}
 			read_one(std::make_pair(std::string(yacc::fin_id), std::any()));
 		}
+		void write(std::string filename);
 	};
 	//辅助类表示这次规约只是单纯的将第n个被规约符号的数据作为规约成的新文法符号的数据
 	struct pass_by
@@ -190,3 +198,4 @@ namespace yacc{
 		return make_grammer(sym,tmp::FFL(root_handle));
 	}
 }
+extern int bflag;

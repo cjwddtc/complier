@@ -3,7 +3,8 @@
 #pragma once
 #include <unordered_set>
 #include <unordered_map>
-
+#include <set>
+#include <map>
 
 //实现hash函数，不重要
 namespace std
@@ -30,14 +31,15 @@ template <class state_type,class input_type>
 class state_to_map
 {
 public:
-    typedef std::unordered_set<state_type> state_set;
-	typedef std::unordered_map<input_type, state_set> next_map;
+    typedef std::set<state_type> state_set;
+	typedef std::map<input_type, state_set> next_map;
 private:
+public:
 	//状态id对应的状态集合
-    std::unordered_map<state_set,size_t> all;
+    std::map<state_set,size_t> all;
 	size_t n;
 	//待next的状态
-	std::unordered_set<const state_set*> read_to_next;
+	std::set<const state_set*> read_to_next;
 protected:
 	//闭包将一个状态闭包为状态集合
     virtual void expand(state_type type,state_set &ptr)=0;
@@ -79,6 +81,8 @@ protected:
     void make_map(state_type start_state)
     {
 		n = 0;
+		read_to_next.clear();
+		all.clear();
 		state_set start_set;
 		start_set.insert(start_state);
 		insert(start_set);

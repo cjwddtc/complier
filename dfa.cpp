@@ -55,6 +55,7 @@ using yacc::unit_it;
 using yacc::unit;
 typedef std::pair<size_t, size_t> node_s;
 using yacc::pass_by;
+#include <time.h>
 //这个函数主要调用语法分析器解析正则表达式,语法分析器使用方法会在main.cpp中描述
 nfa::nfa()
 {
@@ -69,11 +70,7 @@ nfa::nfa()
 	symbol(question);//?
 	symbol(backslash);//反斜杠
 	symbol(or_) ;//|
-	symbol(backslash_exp);//\a 
-	symbol(backet_exp);//(a)
-	symbol(repeat_exp);//*+?a
-	symbol(or_exp);//a|b
-	symbol(to_exp);//a-b
+	symbol(exp);//(a)
 	id_map.emplace(L'(',left_small);
 	id_map.emplace(L')', right_small);
 	id_map.emplace(L'*', star);
@@ -85,20 +82,20 @@ nfa::nfa()
 	using yacc::not_use;
 	for (auto &b : id_map)
 	{
-		backslash_exp = { backslash,b.second }, [this](not_use,wchar_t ch) {
+		exp = { backslash,b.second }, [this](not_use,wchar_t ch) {
 			size_t start_s = create_status();
 			size_t end_s = create_status();
 			link(start_s, end_s,ch);
 			return std::make_pair(start_s, end_s);
 		};
 	}
-	backslash_exp = { backslash,char_}, [this](not_use ,wchar_t ch) {
+	exp = { backslash,char_}, [this](not_use ,wchar_t ch) {
 		size_t start_s = create_status();
 		size_t end_s = create_status();
 		link(start_s, end_s, ch);
 		return std::make_pair(start_s, end_s);
 	};
-	to_exp = { char_,minus,char_ }, [this](wchar_t a,not_use,wchar_t b)
+	exp = { char_,minus,char_ }, [this](wchar_t a,not_use,wchar_t b)
 	{
 		size_t start_s = create_status();
 		size_t end_s = create_status();
@@ -108,44 +105,47 @@ nfa::nfa()
 		}
 		return std::make_pair(start_s, end_s);
 	};
-	backet_exp = { left_small ,or_exp,right_small }, pass_by(1);
-	backet_exp = {backslash_exp}, pass_by(0);
-	backet_exp = { char_ }, [this](wchar_t ch) {
+	exp = { exp,star }, [this](node_s a, not_use) {
+		link(a.second, a.first);
+		link(a.first, a.second);
+		return a;
+	};
+	exp = { exp,plus }, [this](node_s a, not_use) {
+		link(a.second, a.first);
+		return a;
+	};
+	exp = { exp,question }, [this](node_s a, not_use) {
+		link(a.first, a.second);
+		return a;
+	};
+	exp = { exp,exp }, [this](node_s a, node_s b) {
+		link(a.second, b.first);
+		return std::make_pair(a.first, b.second);
+	};
+	exp = { left_small ,exp,right_small }, pass_by(1);
+	exp = { char_ }, [this](wchar_t ch) {
 		size_t start_s = create_status();
 		size_t end_s = create_status();
 		link(start_s, end_s,ch);
 		return std::make_pair(start_s, end_s);
 	};
-	backet_exp = { to_exp }, pass_by(0);
-	repeat_exp = { backet_exp,star }, [this](node_s a,not_use) {
-		link(a.second, a.first);
-		link(a.first, a.second);
-		return a;
-	};
-	repeat_exp = { backet_exp,plus }, [this](node_s a, not_use) {
-		link(a.second, a.first);
-		return a;
-	};
-	repeat_exp = { backet_exp,question }, [this](node_s a, not_use) {
-		link(a.first, a.second);
-		return a;
-	};
-	repeat_exp = {backet_exp}, pass_by(0);
-	or_exp = { or_exp,or_,or_exp }, [this](node_s a,not_use,node_s b) {
+	exp = { exp,or_,exp }, [this](node_s a,not_use,node_s b) {
 		link(a.first, b.first);
 		link(b.second, a.second);
 		return a;
 	};
-	or_exp = { repeat_exp }, pass_by(0);
-	or_exp = { or_exp,or_exp }, [this](node_s a,node_s b) {
-		link(a.second, b.first);
-		return std::make_pair(a.first, b.second);
-	};
 	
-	reggm = make_grammer(or_exp,[this](node_s b) {
+	reggm = make_grammer(exp,[this](node_s b) {
 		link(0, b.first);
 		set_name(b.second, c_id);
 	});
+	char a[17] = "D:\\qweasdasd.txt";
+	srand(time(0));
+	for (int i = 6; i < 12; i++)
+	{
+		a[i] = 'a'+rand()%26;
+	}
+	reggm->write(a);
 }
 const std::string char_string = "char_";
 void nfa::add(std::wstring str, std::string id)

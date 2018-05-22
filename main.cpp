@@ -221,18 +221,3 @@ else print_type(char,c,a)
 	getchar();
 	return 0;
 }
-
-int main_() {
-
-	final_symbol(number, LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
-	final_symbol(sep, LR"(;)");
-	auto a = make_dfa();
-	std::vector<char> vec;
-	vec.push_back('5');
-	vec.push_back('5');
-	vec.push_back('.');
-	vec.push_back('4');
-	vec.push_back(';');
-	a->read(vec.begin(), vec.end());
-	return 0;
-}

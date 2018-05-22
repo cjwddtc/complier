@@ -47,11 +47,11 @@ int main()
 	null_symbol(newr,L"\r");
 	null_symbol(newt,L"\t");
 	//通过正则表达式定义终结符
-	final_symbol(id, LR"((a-z)+)");
-	final_symbol(type,LR"(int|float|char)");
-	final_symbol(print,LR"(print)");
+	final_symbol(type, LR"(int|float|char)");
+	final_symbol(print, LR"(print)");
 	final_symbol(number,LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
 	final_symbol(int_number,LR"((1-9)(0-9)*)");
+	final_symbol(id, LR"((a-z)+)");
 	final_symbol(ar,LR"(\-\>)");
 	final_symbol(op1,LR"(\+|\-)");
 	final_symbol(op2,LR"(\*|\/)");

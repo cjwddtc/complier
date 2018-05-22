@@ -1,5 +1,4 @@
 #include "dfa.h"
-#include <map>
 #include <algorithm>
 using output_type=yacc::input_type;
 class nfa
@@ -55,7 +54,6 @@ using yacc::unit_it;
 using yacc::unit;
 typedef std::pair<size_t, size_t> node_s;
 using yacc::pass_by;
-#include <time.h>
 //这个函数主要调用语法分析器解析正则表达式,语法分析器使用方法会在main.cpp中描述
 nfa::nfa()
 {
@@ -139,13 +137,6 @@ nfa::nfa()
 		link(0, b.first);
 		set_name(b.second, c_id);
 	});
-	char a[17] = "D:\\qweasdasd.txt";
-	srand(time(0));
-	for (int i = 6; i < 12; i++)
-	{
-		a[i] = 'a'+rand()%26;
-	}
-	reggm->write(a);
 }
 const std::string char_string = "char_";
 void nfa::add(std::wstring str, std::string id)
@@ -214,12 +205,16 @@ public:
 	//state_to_map在新建状态是调用
 	virtual void add_state(size_t n, const state_set &ptr)
 	{
+		size_t maxd=-1;
 		//判断这个状态是否是可结束状态表
 		for (size_t d : ptr)
 		{
 			if (status[d].second)
 			{
-				fin_status[n] = *status[d].second;
+				if (d < maxd) {
+					fin_status[n] = *status[d].second;
+					maxd = d;
+				}
 			}
 		}
 	}

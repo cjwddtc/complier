@@ -1,12 +1,10 @@
 //语法分析器
 #pragma once
 //#include <unordered_map>
-#include <map>
 #include <vector>
 #include <memory>
 #include <string>
 #include <assert.h>
-#include <set>
 #include <stack>
 #include "template.hpp"
 #include <string>
@@ -133,12 +131,11 @@ namespace tmp
 		return func;
 	}
 }
-#include <iostream>
 namespace yacc{
 	//词法分析器
 	class gammer
 	{
-		typedef std::map<state_index, op> state_map;
+		typedef std::unordered_map<state_index, op> state_map;
 		//状态转移表
 	public:
 		state_map map;
@@ -163,7 +160,6 @@ namespace yacc{
 			}
 			read_one(std::make_pair(std::string(yacc::fin_id), std::any()));
 		}
-		void write(std::string filename);
 	};
 	//辅助类表示这次规约只是单纯的将第n个被规约符号的数据作为规约成的新文法符号的数据
 	struct pass_by

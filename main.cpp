@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <fstream>
+#include <variant>
 using yacc::unit;
 using yacc::unit_it;
 using yacc::make_grammer;
@@ -13,34 +14,76 @@ using yacc::pass_by;
 using yacc::not_use;
 //支持的类型char由于字面值比较麻烦没弄
 enum v_type_n {
-	float_,int_ , char_
+	i8,i16,i32 , i64,
+	half_, float_, double_, fp128
 };
 //变量信息pos为距离栈顶偏移量types为类型
 struct var_info
 {
-	size_t pos;
-	v_type_n types;
+	bool is_literal;
+	std::wstring name;
+	v_type_n base_type;
+	std::vector<size_t> plus;
 };
-//定义从类型到v_type_n的映射
-template <class T>
-v_type_n type_t = float_;
 
-
-//分配栈
-char *p = (char*)malloc(4096);
-//栈顶指针不过由于没有实现函数功能所以和p是永远一样的
-char *c = p;
-//栈的起始分配位置最开头的8个字节当临时变量了
-size_t c_pos=8;
 //符号表
-std::unordered_map<std::wstring, var_info> symbol_map;
 
+struct symbol_map
+{
+	std::unordered_map<std::wstring, var_info> global_symbol_map;
+	std::list<std::unordered_map<std::wstring, var_info>> local_symbol_map;
+	var_info &find(std::wstring str) {
+		for (auto a : local_symbol_map)
+		{
+			auto it = a.find(str);
+			if (it == a.end()) {
+				return it->second;
+			}
+		}
+		auto it = global_symbol_map.find(str);
+		if (it != global_symbol_map.end())
+		{
+			return it->second;
+		}
+		throw L"undefind id " + str;
+	}
+	bool add(std::wstring str, v_type_n base_type, std::vector<size_t> plus)
+	{
+		var_info v;
+		v.base_type = base_type;
+		v.is_literal = false;
+		if (local_symbol_map.empty()) {
+
+			v.name = L"@" + str;
+			v.plus = plus;
+			return local_symbol_map.front().emplace(str, std::move(v)).second;
+		}
+		else {
+			v.name = L"%";
+			std::fill_n(std::back_inserter(v.name), local_symbol_map.size() - 1, '.');
+			v.name += str;
+			v.plus = plus;
+			return local_symbol_map.front().emplace(str, std::move(v)).second;
+		}
+	}
+	bool is_global() {
+		return local_symbol_map.empty();
+	}
+	void add()
+	{
+		local_symbol_map.emplace_front();
+	}
+	void remove()
+	{
+		local_symbol_map.pop_front();
+	}
+};
+symbol_map map;
+using namespace std::string_literals;
+size_t tmp_id;
+std::wostream &o = std::wcout;
 int main()
 {
-	//初始化类型到类型枚举的映射
-	type_t<int> = int_;
-	type_t<float> = float_;
-	type_t<char> = char_;
 	//不要的词法符号
 	null_symbol(space,L"\ ");
 	null_symbol(newline,L"\n");
@@ -76,35 +119,26 @@ int main()
 	symbol(statements);
 	//数字本身是变量
 	exp = { number }, [](std::wstring str) {
-		//计算数字值和分配内存空间
-		*(float*)(c + c_pos)=std::stod(str);
-		var_info a;
-		a.pos = c_pos;
-		a.types=float_;
-		c_pos += sizeof(int);
-		return a;
+		var_info v;
+		v.base_type = double_;
+		v.is_literal = true;
+		v.name = str;
+		return v;
 	};
 	exp = { int_number }, [](std::wstring str) {
-		//计算数字值和分配内存空间（整形）
-		*(int*)(c + c_pos) = std::stoi(str);
-		var_info a;
-		a.pos = c_pos;
-		a.types = int_;
-		c_pos += sizeof(int);
-		return a;
+		var_info v;
+		v.base_type = i32;
+		v.is_literal = true;
+		v.name = str;
+		return v;
 	};
 	exp = {id}, [](std::wstring str) {
 		//从符号表中查找
-		auto a = symbol_map.find(str);
-		if (a == symbol_map.end()) {
-			throw L"undefind id " + str;
-		}
-		else {
-			return a->second;
-		}
+		return map.find(str);
 	};
 	//声明语句
 	statement = { type,id ,sep }, [](std::wstring str,std::wstring id) {
+
 		auto a = symbol_map.find(str);
 		if (a != symbol_map.end()) {
 			throw L"redeclare id " + str;

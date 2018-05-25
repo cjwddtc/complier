@@ -15,15 +15,34 @@ using yacc::not_use;
 //支持的类型char由于字面值比较麻烦没弄
 enum v_type_n {
 	i8,i16,i32 , i64,
-	half_, float_, double_, fp128
+	half_, float_, double_, fp128_
 };
+
+struct type_i
+{
+	v_type_n base_type;
+	std::vector<size_t> plus;
+	operator std::wstring()
+	{
+		std::wstring str(ws_map[base_type]);
+		for (auto a : plus)
+		{
+			if (a == 0) {
+				str = str + L"*";
+			}
+			else {
+				str = L"[ " + std::to_wstring(a) + L" * " + str + L" ]";
+			}
+		}
+	}
+};
+
 //变量信息pos为距离栈顶偏移量types为类型
 struct var_info
 {
 	bool is_literal;
 	std::wstring name;
-	v_type_n base_type;
-	std::vector<size_t> plus;
+	type_i t_i;
 };
 
 //符号表
@@ -50,19 +69,19 @@ struct symbol_map
 	bool add(std::wstring str, v_type_n base_type, std::vector<size_t> plus)
 	{
 		var_info v;
-		v.base_type = base_type;
+		v.t_i.base_type = base_type;
 		v.is_literal = false;
 		if (local_symbol_map.empty()) {
 
 			v.name = L"@" + str;
-			v.plus = plus;
+			v.t_i.plus = plus;
 			return local_symbol_map.front().emplace(str, std::move(v)).second;
 		}
 		else {
 			v.name = L"%";
 			std::fill_n(std::back_inserter(v.name), local_symbol_map.size() - 1, '.');
 			v.name += str;
-			v.plus = plus;
+			v.t_i.plus = plus;
 			return local_symbol_map.front().emplace(str, std::move(v)).second;
 		}
 	}
@@ -82,8 +101,14 @@ symbol_map map;
 using namespace std::string_literals;
 size_t tmp_id;
 std::wostream &o = std::wcout;
+std::unordered_map<std::wstring, v_type_n> type_map;
+std::wstring_view ws_map[8] = { L"int8",L"int16" ,L"int32" ,L"int64",L"half",L"float",L"double",L"ldouble"};
 int main()
 {
+	for (auto i=0;i!=8;i++)
+	{
+		type_map[std::wstring(ws_map[i])] = (v_type_n)i;
+	}
 	//不要的词法符号
 	null_symbol(space,L"\ ");
 	null_symbol(newline,L"\n");
@@ -97,7 +122,8 @@ int main()
 	final_symbol(id, LR"((a-z)+)");
 	final_symbol(ar,LR"(\-\>)");
 	final_symbol(op1,LR"(\+|\-)");
-	final_symbol(op2,LR"(\*|\/)");
+	final_symbol(op2, LR"(\/)");
+	final_symbol(star_op2, LR"(\*)");
 	final_symbol(bl,LR"(\()");
 	final_symbol(br,LR"(\))");
 
@@ -111,6 +137,7 @@ int main()
 	symbol(array_);
 	//不支持
 	symbol(unre);
+	symbol(type_dec);
 	//变量
 	symbol(exp);
 	//语句
@@ -120,14 +147,14 @@ int main()
 	//数字本身是变量
 	exp = { number }, [](std::wstring str) {
 		var_info v;
-		v.base_type = double_;
+		v.t_i.base_type = double_;
 		v.is_literal = true;
 		v.name = str;
 		return v;
 	};
 	exp = { int_number }, [](std::wstring str) {
 		var_info v;
-		v.base_type = i32;
+		v.t_i.base_type = i32;
 		v.is_literal = true;
 		v.name = str;
 		return v;
@@ -136,31 +163,28 @@ int main()
 		//从符号表中查找
 		return map.find(str);
 	};
+	type_dec = { type }, [](std::wstring str) {
+		type_i t;
+		t.base_type = type_map[str];
+		return t;
+	};
+	type_dec = { type_dec,ml,int_number,mr }, [](type_i t, not_use, std::wstring str, not_use) {
+		t.plus.push_back(std::stoll(str));
+		return t;
+	};
+	type_dec = { type_dec,star_op2 }, [](type_i t, not_use) {
+		t.plus.push_back(0);
+		return t;
+	};
 	//声明语句
-	statement = { type,id ,sep }, [](std::wstring str,std::wstring id) {
-
-		auto a = symbol_map.find(str);
-		if (a != symbol_map.end()) {
-			throw L"redeclare id " + str;
+	statement = { type_dec,id ,sep }, [](type_i i,std::wstring id) {
+		if (map.is_global()) {
+			o << "@" << id << "= global " << (std::wstring)i;
+			map.add(id, i.base_type, i.plus);
 		}
-		auto &b = symbol_map[id];
-		b.pos = c_pos;
-		if (str == L"int")
-		{
-			b.types = int_;
-			c_pos += sizeof(int);
+		else {
+			o << "@" << id << "= global " << (std::wstring)i;
 		}
-		if (str == L"float")
-		{
-			b.types = float_;
-			c_pos += sizeof(float);
-		}
-		if (str == L"char")
-		{
-			b.types = char_;
-			c_pos += sizeof(char);
-		}
-		return b;
 	};
 	//这个pass_by表示规约后，被规约的第二个符号backet的值直接赋给规程成的backet
 	exp = { bl,exp,br }, pass_by(1);

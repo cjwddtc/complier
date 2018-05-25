@@ -66,7 +66,7 @@ struct symbol_map
 		}
 		throw L"undefind id " + str;
 	}
-	bool add(std::wstring str, v_type_n base_type, std::vector<size_t> plus)
+	var_info &add(std::wstring str, v_type_n base_type, std::vector<size_t> plus)
 	{
 		var_info v;
 		v.t_i.base_type = base_type;
@@ -75,7 +75,11 @@ struct symbol_map
 
 			v.name = L"@" + str;
 			v.t_i.plus = plus;
-			return local_symbol_map.front().emplace(str, std::move(v)).second;
+			auto it = local_symbol_map.front().emplace(str, std::move(v));
+			if (!it.second) {
+				throw L"redefine of " + v.name;
+			}
+			return.first;
 		}
 		else {
 			v.name = L"%";
@@ -183,7 +187,7 @@ int main()
 			map.add(id, i.base_type, i.plus);
 		}
 		else {
-			o << "@" << id << "= global " << (std::wstring)i;
+			map.add(id, i.base_type, i.plus);
 		}
 	};
 	//这个pass_by表示规约后，被规约的第二个符号backet的值直接赋给规程成的backet

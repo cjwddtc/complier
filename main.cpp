@@ -12,19 +12,54 @@ using yacc::unit_it;
 using yacc::make_grammer;
 using yacc::pass_by;
 using yacc::not_use;
+std::wostream &out_put = std::wcout;
 //支持的类型char由于字面值比较麻烦没弄
 enum v_type_n {
 	i8,i16,i32 , i64,
 	half_, float_, double_, fp128
 };
+
 //变量信息pos为距离栈顶偏移量types为类型
 struct var_info
 {
-	bool is_literal;
 	std::wstring name;
 	v_type_n base_type;
 	std::vector<size_t> plus;
 };
+
+struct t_info
+{
+
+};
+struct tmp_var;
+
+struct var
+{
+	virtual tmp_var to_var()=0;
+};
+struct tmp_var:public var
+{
+	std::wstring value_name;
+	t_info ti;
+	tmp_var to_var()
+	{
+		return *this;
+	}
+};
+
+struct addr_var :public var{
+	std::wstring addr_name;
+	t_info ti;
+	std::wstring get_value();
+	void save_value(std::wstring str);
+	tmp_var to_var()
+	{
+		tmp_var v;
+		v.ti = ti;
+		out_put << ""
+	}
+};
+
 
 //符号表
 
@@ -81,7 +116,6 @@ struct symbol_map
 symbol_map map;
 using namespace std::string_literals;
 size_t tmp_id;
-std::wostream &o = std::wcout;
 int main()
 {
 	//不要的词法符号

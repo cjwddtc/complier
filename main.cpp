@@ -51,7 +51,7 @@ int main()
 	final_symbol(print, LR"(print)");
 	final_symbol(number,LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
 	final_symbol(int_number,LR"((1-9)(0-9)*)");
-	final_symbol(id, LR"((a-z)+)");
+	final_symbol(id, LR"((a-z|A-Z|_)(a-z|A-Z|_|0-9)*)");
 	final_symbol(ar,LR"(\-\>)");
 	final_symbol(op1,LR"(\+|\-)");
 	final_symbol(op2,LR"(\*|\/)");

@@ -37,12 +37,16 @@ struct type_i
 	}
 };
 
-//变量信息pos为距离栈顶偏移量types为类型
-struct var_info
+
+struct tmp_var
 {
-	bool is_literal;
-	std::wstring name;
-	type_i t_i;
+	size_t i;
+	type_i type;
+};
+
+struct address_var
+{
+
 };
 
 //符号表

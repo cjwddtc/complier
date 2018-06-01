@@ -12,19 +12,21 @@ using yacc::unit_it;
 using yacc::make_grammer;
 using yacc::pass_by;
 using yacc::not_use;
-//支持的类型char由于字面值比较麻烦没弄
-enum v_type_n {
-	i8,i16,i32 , i64,
-	half_, float_, double_, fp128_
-};
+
+using namespace std::string_literals;
+size_t tmp_id;
+std::wostream &o = std::wcout;
+std::unordered_map<std::wstring, std::wstring> type_map;
+std::wstring_view ir_map[8] = { L"i8",L"i16",L"i32",L"i64",L"half",L"float",L"double",L"f128" };
+std::wstring_view lu_map[8] = { L"int8",L"int16" ,L"int32" ,L"int64",L"half",L"float",L"double",L"ldouble" };
 
 struct type_i
 {
-	v_type_n base_type;
+	std::wstring base_type;
 	std::vector<size_t> plus;
 	operator std::wstring()
 	{
-		std::wstring str(ws_map[base_type]);
+		std::wstring str(type_map[base_type]);
 		for (auto a : plus)
 		{
 			if (a == 0) {
@@ -40,22 +42,26 @@ struct type_i
 
 struct tmp_var
 {
-	size_t i;
+	std::wstring real_name;
 	type_i type;
 };
 
 struct address_var
 {
-
+	std::wstring real_name;
+	type_i type;
 };
 
+std::wostream& operator <<(std::wostream &o, tmp_var &v){}
 //符号表
 
 struct symbol_map
 {
-	std::unordered_map<std::wstring, var_info> global_symbol_map;
-	std::list<std::unordered_map<std::wstring, var_info>> local_symbol_map;
-	var_info &find(std::wstring str) {
+	std::unordered_map<std::wstring, address_var> global_symbol_map;
+	std::list<std::unordered_map<std::wstring, address_var>> local_symbol_map;
+	size_t tmp_id;
+	size_t new_tmp();
+	address_var &find(std::wstring str) {
 		for (auto a : local_symbol_map)
 		{
 			auto it = a.find(str);
@@ -70,31 +76,10 @@ struct symbol_map
 		}
 		throw L"undefind id " + str;
 	}
-	var_info &add(std::wstring str, v_type_n base_type, std::vector<size_t> plus)
+	address_var &add(std::wstring str, type_i t)
 	{
-		var_info v;
-		v.t_i.base_type = base_type;
-		v.is_literal = false;
-		if (local_symbol_map.empty()) {
-
-			v.name = L"@" + str;
-			v.t_i.plus = plus;
-			auto it = local_symbol_map.front().emplace(str, std::move(v));
-			if (!it.second) {
-				throw L"redefine of " + v.name;
-			}
-			return.first;
-		}
-		else {
-			v.name = L"%";
-			std::fill_n(std::back_inserter(v.name), local_symbol_map.size() - 1, '.');
-			v.name += str;
-			v.t_i.plus = plus;
-			return local_symbol_map.front().emplace(str, std::move(v)).second;
-		}
 	}
 	bool is_global() {
-		return local_symbol_map.empty();
 	}
 	void add()
 	{
@@ -106,16 +91,11 @@ struct symbol_map
 	}
 };
 symbol_map map;
-using namespace std::string_literals;
-size_t tmp_id;
-std::wostream &o = std::wcout;
-std::unordered_map<std::wstring, v_type_n> type_map;
-std::wstring_view ws_map[8] = { L"int8",L"int16" ,L"int32" ,L"int64",L"half",L"float",L"double",L"ldouble"};
 int main()
 {
-	for (auto i=0;i!=8;i++)
-	{
-		type_map[std::wstring(ws_map[i])] = (v_type_n)i;
+	for (int i = 0; i < 8; i++) {
+		type_map.emplace(std::wstring(ir_map[i]), std::wstring(lu_map[i]));
+		type_map.emplace(std::wstring(lu_map[i]), std::wstring(ir_map[i]));
 	}
 	//不要的词法符号
 	null_symbol(space,L"\ ");
@@ -154,10 +134,10 @@ int main()
 	symbol(statements);
 	//数字本身是变量
 	exp = { number }, [](std::wstring str) {
-		var_info v;
-		v.t_i.base_type = double_;
-		v.is_literal = true;
-		v.name = str;
+		tmp_var v;
+		v.i=map.new_tmp();
+		v.type.base_type = L"float";
+		o << v << "= fadd f128 0.0 ,f128 " << str;
 		return v;
 	};
 	exp = { int_number }, [](std::wstring str) {

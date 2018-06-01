@@ -95,6 +95,7 @@ void gammer::read_one(unit a)
 		}, it->second);
 	}
 	else {
+		printf("unexpect token %s\n", a.first.c_str());
 		throw a;
 	}
 ;

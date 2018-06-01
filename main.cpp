@@ -61,7 +61,10 @@ int main()
 	final_symbol(ml,LR"(\[)");
 	final_symbol(mr,LR"(\])");
 	final_symbol(equal,LR"(\=)");
-	final_symbol(sep,LR"(;)");
+	final_symbol(sep, LR"(;)");
+	final_symbol(lb, LR"({)");
+	final_symbol(rb, LR"(})");
+	final_symbol(dot, LR"(,)");
 
 	//下面是非终结符
 	//数组还不支持
@@ -74,6 +77,10 @@ int main()
 	symbol(statement);
 	//语句组
 	symbol(statements);
+	symbol(dec);
+	symbol(arg_list);
+	symbol(function);
+	symbol(args);
 	//数字本身是变量
 	exp = { number }, [](std::wstring str) {
 		//计算数字值和分配内存空间
@@ -103,6 +110,13 @@ int main()
 			return a->second;
 		}
 	};
+	dec = { type,id }, pass_by(-1);
+	arg_list = { dec }, pass_by(-1);
+	arg_list = { arg_list,dot,dec }, pass_by(-1);
+	args = { bl,br }, pass_by(-1);
+	args = { bl,arg_list,br }, pass_by(-1);
+	function = { type,id,args,lb,statements,rb }, pass_by(-1);
+	statement = { function }, pass_by(-1);
 	//声明语句
 	statement = { type,id ,sep }, [](std::wstring str,std::wstring id) {
 		auto a = symbol_map.find(str);
@@ -207,8 +221,6 @@ else print_type(char,c,a)
 		print_all_type(a)
 		return not_use();
 	};
-	//pass_by传-1表示不生成数据
-	statement = { exp }, pass_by(-1);
 	statements = { statement }, pass_by(-1);
 	statements = { statements,statement }, pass_by(-1);
 	auto a = make_dfa();

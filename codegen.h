@@ -2,16 +2,29 @@
 #include <map>
 #include <vector>
 #include <optional>
+#include <variant>
 namespace codegen {
+
+	struct function;
 	struct type
 	{
-		std::wstring base_type;
+		std::variant<std::wstring,function> base_type;
 		std::vector<size_t> plus;
 		operator std::wstring();
-		bool is_array();
+		bool is_variable();
 		size_t size();
+		bool operator==(const type &a) {
+			return base_type == a.base_type && plus == a.plus;
+		}
 	};
 
+	struct function
+	{
+		type ret_type;
+		std::vector<type> arg_type;
+		bool have_finish;
+		operator std::wstring();
+	};
 
 	struct var
 	{
@@ -27,6 +40,7 @@ namespace codegen {
 		var &find(std::wstring str);
 		var &add(std::wstring name);
 		var newvar();
+		name_space();
 		void enable(bool flag);
 	};
 

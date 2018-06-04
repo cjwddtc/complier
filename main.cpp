@@ -22,7 +22,7 @@ using codegen::var;
 int main()
 {
 	//不要的词法符号
-	null_symbol(space,L" ");
+	null_symbol(space,L"\ ");
 	null_symbol(newline,L"\n");
 	null_symbol(newr,L"\r");
 	null_symbol(newt,L"\t");
@@ -89,14 +89,14 @@ int main()
 	auto dec_func= [](codegen::type i, std::wstring id) {
 		var &v = map.add(id);
 		v.type = i;
-		o << v.real_name << L"= alloca" << (std::wstring)v.type;
+		o << v.real_name << L"= alloca " << (std::wstring)v.type << "\n";
 		return i;
 	};
 	//声明语句
 	more_dec = { type_dec,id }, dec_func;
 	dec = { more_dec,comma,id }, dec_func;
 	dec = { more_dec }, pass_by(0);
-	statement = { dec }, pass_by(0);
+	statement = { dec,sep }, pass_by(0);
 	
 	
 	//这个pass_by表示规约后，被规约的第二个符号backet的值直接赋给规程成的backet
@@ -105,8 +105,8 @@ int main()
 	const_exp = { exp }, [](var a) {
 		var v = map.newvar();
 		v.type = a.type;
-		if (!a.type.is_array()) {
-			o << v.real_name << L"= load " << std::wstring(a.type) << L"," << std::wstring(a.type) << L"*" << a.real_name;
+		if (!a.type.is_variable()) {
+			o << v.real_name << L"= load " << std::wstring(a.type) << L"," << std::wstring(a.type) << L"*" << a.real_name << "\n";
 		}
 		else {
 			v.real_name = a.real_name;
@@ -137,12 +137,13 @@ int main()
 			str = L"sub";
 		var v = map.newvar();
 		o << v.real_name << "=" << ((a.type.base_type[0] == L'i') ? L"" : L"f") << str << " " << a.type.base_type << a.real_name << "," << b.real_name << L"\n";
+		v.type = a.type;
 		return v;
 	};
 	const_exp = { exp,equal,const_exp }, [](var a, not_use, var b) {
 		assert(a.type.base_type == b.type.base_type);
 		assert(a.type.plus == b.type.plus);
-		o << "store " << std::wstring(a.type) << b.real_name << L"," << std::wstring(a.type) << "*" << a.real_name << "\n";
+		o << "store " << std::wstring(a.type) << " " << b.real_name << L"," << std::wstring(a.type) << "* " << a.real_name << "\n";
 		return b;
 	};
 	statement = { const_exp,sep }, pass_by(-1);

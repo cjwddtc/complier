@@ -1,5 +1,5 @@
 set(CMAKE_CXX_STANDARD 17)
 aux_source_directory(. SRC) 
-add_executable(asd yufashu.cpp dfa.cpp main.cpp codegen.h)
+add_executable(asd ${SRC})
 #add_executable(run run.cpp)
 #add_executable(asd dfa.cpp yufashu.cpp)

@@ -15,9 +15,9 @@ type::operator std::wstring()
 		}
 		if constexpr (std::is_same_v<T, function>)
 		{
-			str += (std::wstring)function;
+			str += (std::wstring)*arg;
 		}
-	}, this->base_type);
+	}, base_type.father());
 	for (auto a : plus) {
 		if (a) {
 			str = L"[" + std::to_wstring(a) + L" x " + str + L"]";
@@ -26,6 +26,27 @@ type::operator std::wstring()
 			str += L'*';
 		}
 	}
+	return str;
+}
+
+std::wstring codegen::function_::to_string(std::wstring name)
+{
+	std::wstring str(ret_type);
+	str += L" ";
+	str += name;
+	str += L"(";
+	for (auto &a : arg_type)
+	{
+		str += a;
+		str += L',';
+	}
+	if (have_finish) {
+		str.pop_back();
+	}
+	else {
+		str += L"...";
+	}
+	str += L')';
 	return str;
 }
 
@@ -40,17 +61,26 @@ size_t type::size() {
 
 
 
-function::operator std::wstring()
+bool type::operator==(const type &a) const{
+	return base_type == a.base_type && plus == a.plus;
+}
+function_::operator std::wstring()
 {
-	std::wstring str=L"(";
+	std::wstring str(ret_type);
+	str+= L"(";
 	for (auto &a : arg_type)
 	{
 		str += a;
 		str += L',';
 	}
-	str.back() = L')';
-	str += L"->";
-	str += ret_type;
+	if (have_finish) {
+		str.pop_back();
+	}
+	else {
+		str += L"...";
+	}
+	str += L')';
+	return str;
 }
 
 var &name_space::find(std::wstring str)

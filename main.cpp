@@ -19,6 +19,7 @@ size_t tmp_id;
 std::wostream &o = std::wcout;
 codegen::name_space map;
 using codegen::var;
+using cg_type=codegen::type;
 int main()
 {
 	//不要的词法符号
@@ -36,8 +37,10 @@ int main()
 	final_symbol(op1,LR"(\+|\-)");
 	final_symbol(op2, LR"(\/)");
 	final_symbol(star_op2, LR"(\*)");
-	final_symbol(bl,LR"(\()");
-	final_symbol(br,LR"(\))");
+	final_symbol(bl, LR"(\()");
+	final_symbol(br, LR"(\))");
+	final_symbol(bigl, LR"(\{)");
+	final_symbol(bigr, LR"(\})");
 
 	final_symbol(ml,LR"(\[)");
 	final_symbol(mr,LR"(\])");
@@ -61,6 +64,13 @@ int main()
 	symbol(statement);
 	//语句组
 	symbol(statements);
+	symbol(function_type);
+	symbol(declare);
+	symbol(root);
+	symbol(block);
+	symbol(arg_type_list);
+	symbol(arg_list);
+	symbol(bigl_);
 	//数字本身是变量
 	exp = {id}, [](std::wstring str)->var {
 		//从符号表中查找
@@ -70,13 +80,50 @@ int main()
 		//从符号表中查找
 		var v;
 		v.real_name = str;
-		v.type.base_type = L"i32";
+		v.type.base_type.father()= L"i32";
 		return v;
+	};
+	function_type = { type_dec,bl,arg_type_list ,br },
+		[](cg_type ret_t, not_use, std::vector<cg_type> ts, not_use) {
+		codegen::function f(new codegen::function_);
+		f->arg_type = ts;
+		f->ret_type = ret_t;
+		return f;
 	};
 	type_dec = { type }, [](std::wstring str) {
 		codegen::type t;
-		t.base_type = str;
+		t.base_type.father() = str;
 		return t;
+	};
+	bigl_ = { bigl }, [](not_use) {
+		map.enable(true);
+		return not_use(); 
+	};
+	block = { function_type ,id,sep }, [](codegen::function f, std::wstring str) {
+		var v = map.add(str);
+		o << "declare " << f->to_string(v.real_name);
+		v.type.base_type.father() = f;
+		return v;
+	};
+
+
+	type_dec = { function_type }, [](codegen::function f) {
+		cg_type t;
+		t.base_type.father() = f;
+		return t;
+	};
+	arg_type_list = { type_dec }, [](cg_type t) {
+		std::vector<cg_type> ts;
+		ts.emplace_back(t);
+		return ts;
+	};
+	arg_type_list = {}, []() {
+		std::vector<cg_type> ts;
+		return ts;
+	};
+	arg_type_list = { arg_type_list ,comma,type_dec }, [](std::vector<cg_type> ts,not_use,cg_type t) {
+		ts.emplace_back(t);
+		return ts;
 	};
 	type_dec = { type_dec,ml,int_number,mr }, [](codegen::type t, not_use, std::wstring str, not_use) {
 		t.plus.push_back(std::stoll(str));
@@ -96,8 +143,8 @@ int main()
 	more_dec = { type_dec,id }, dec_func;
 	dec = { more_dec,comma,id }, dec_func;
 	dec = { more_dec }, pass_by(0);
-	statement = { dec,sep }, pass_by(0);
-	
+	declare = { dec,sep }, pass_by(0);
+	statement = { declare }, pass_by(0);
 	
 	//这个pass_by表示规约后，被规约的第二个符号backet的值直接赋给规程成的backet
 	exp = { bl,exp,br }, pass_by(1);
@@ -123,40 +170,41 @@ int main()
 		else if(op==L"/")
 			str = L"div";
 		var v= map.newvar();
-		o << v.real_name << "=" << ((a.type.base_type[0] == L'i') ? L"" : L"f") << str << " " << a.type.base_type << a.real_name << "," << b.real_name << L"\n";
+		o << v.real_name << "=" << (a.type.base_type.is_interger() ? L"" : L"f")
+			<< str << " " << std::wstring(a.type) << a.real_name << "," << b.real_name << L"\n";
 		return v;
 	};
 	const_exp = { const_exp,op1,const_exp }, [](var a, std::wstring  op, var b) {
-		assert(a.type.plus.empty());
-		assert(b.type.plus.empty());
-		assert(a.type.base_type == b.type.base_type);
+		assert(a.type == b.type);
 		std::wstring str;
 		if (op == L"+")
 			str = L"add";
 		else if (op == L"-")
 			str = L"sub";
 		var v = map.newvar();
-		o << v.real_name << "=" << ((a.type.base_type[0] == L'i') ? L"" : L"f") << str << " " << a.type.base_type << a.real_name << "," << b.real_name << L"\n";
+		o << v.real_name << "=" << (a.type.base_type.is_interger() ? L"" : L"f")
+			<< str << " " << std::wstring(a.type) << a.real_name << "," << b.real_name << L"\n";
 		v.type = a.type;
 		return v;
 	};
 	const_exp = { exp,equal,const_exp }, [](var a, not_use, var b) {
-		assert(a.type.base_type == b.type.base_type);
-		assert(a.type.plus == b.type.plus);
+		assert(a.type == b.type);
 		o << "store " << std::wstring(a.type) << " " << b.real_name << L"," << std::wstring(a.type) << "* " << a.real_name << "\n";
 		return b;
 	};
+	root = { block },pass_by(0);
+	root = { root,block }, pass_by(0);
+	block = { statement }, pass_by(0);
 	statement = { const_exp,sep }, pass_by(-1);
 	//pass_by传-1表示不生成数据
 	statements = { statement }, pass_by(-1);
 	statements = { statements,statement }, pass_by(-1);
 	auto a = make_dfa();
 	bflag = 1;
-	auto b = make_grammer(statements, [](not_use a) {});
+	auto b = make_grammer(root, [](not_use a) {});
 	//读取并执行test.txt的内容
 	std::wifstream ff("D:\\test.txt");
 	auto it = a->read(std::istreambuf_iterator<wchar_t>(ff), std::istreambuf_iterator<wchar_t>());
-	map.enable(true);
 	b->read(it.first, it.second);
 	getchar();
 	return 0;

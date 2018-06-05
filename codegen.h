@@ -5,25 +5,47 @@
 #include <variant>
 namespace codegen {
 
-	struct function;
+	struct function_;
+	typedef std::shared_ptr<function_> function;
+	struct base_type :public std::variant<std::wstring, function>
+	{
+		bool is_interger() {
+			return true;
+		}
+		bool is_function() {
+			return std::visit([](auto arg) {
+				using T = std::decay_t<decltype(arg)>;
+				if constexpr (std::is_same_v<T, function>)
+				{
+					return false;
+				}
+				else {
+					return true;
+				}
+			},father());
+		}
+		std::variant<std::wstring, function>&father()
+		{
+			return (std::variant<std::wstring, function> &)*this;
+		}
+	};
 	struct type
 	{
-		std::variant<std::wstring,function> base_type;
+		base_type base_type;
 		std::vector<size_t> plus;
+		bool operator==(const type &a) const;
 		operator std::wstring();
 		bool is_variable();
 		size_t size();
-		bool operator==(const type &a) {
-			return base_type == a.base_type && plus == a.plus;
-		}
 	};
 
-	struct function
+	struct function_
 	{
 		type ret_type;
 		std::vector<type> arg_type;
 		bool have_finish;
 		operator std::wstring();
+		std::wstring to_string(std::wstring name);
 	};
 
 	struct var

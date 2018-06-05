@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "yufashu.hpp"
+#include <optional>
 #include <iterator>
 using namespace yacc;
 
@@ -191,36 +192,38 @@ public:
 	typedef typename state_to_map<state_type, input_type>::state_set state_set;
 	typedef typename state_to_map<state_type, input_type>::next_map next_map;
 	std::unordered_multimap<input_type, specification_left> gram_map;
+	std::unordered_map<input_type, std::pair<std::unordered_set<input_type> , bool> > first_map;
 	state_map map;
 	grammer_maker() :now_level(0) {	}
 	size_t now_level;
 	///***
 	//Çófirst¼¯
-	void get_first_(input_type id, std::unordered_set<input_type> &set)
+	std::pair<std::unordered_set<input_type>, bool>  &get_first(input_type id)
 	{
-		if (gram_map.find(id) == gram_map.end())
-		{
-			set.insert(id);
-		}
-		else
-		{
-			auto itp = gram_map.equal_range(id);
-			bool flag = true;
-			for (auto it = itp.first; it != itp.second; it++)
+		auto &a = first_map[id];
+		if (a.first.empty()) {
+			if (gram_map.find(id) == gram_map.end())
 			{
-				if (it->second.values.front() == id) {
-					set.insert(id);
-					continue;
-				}
-				else {
-					get_first_(it->second.values.front(), set);
+				a.first.insert(id);
+			}
+			else {
+				auto itp = gram_map.equal_range(id);
+				for (auto it = itp.first; it != itp.second; it++)
+				{
+					if (!it->second.values.empty()) 
+						for (auto &b : it->second.values) {
+							auto &c = get_first(b);
+							a.first.merge(c.first);
+							if (c.second) {
+								goto null_exit;
+							}
+						}
+					a.second = true;
+				null_exit:;
 				}
 			}
 		}
-	}
-	void get_first(input_type id, std::unordered_set<input_type> &set)
-	{
-		get_first_(id, set);
+		return a;
 	}
 	///***
 	//±Õ°ü
@@ -231,13 +234,17 @@ public:
 			input_type other = type.to_id.values[type.pos];
 			auto itp = gram_map.equal_range(other);
 			std::unordered_set<input_type> set;
-			if (type.pos + 1 == type.to_id.values.size())
+			auto pos = type.pos;
+			while (++pos != type.to_id.values.size())
 			{
-				set.insert(type.fin_id);
+				auto &b = get_first(type.to_id.values[pos]);
+				set.merge(b.first);
+				if (!b.second) {
+					goto null_fin;
+				}
 			}
-			else {
-				get_first(type.to_id.values[type.pos + 1], set);
-			}
+			set.insert(type.fin_id);
+			null_fin:
 			for (auto it = itp.first; it != itp.second; it++)
 			{
 				for (auto id : set)

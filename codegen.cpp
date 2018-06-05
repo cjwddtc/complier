@@ -29,22 +29,29 @@ type::operator std::wstring()
 	return str;
 }
 
+codegen::function_::function_():have_finish(true)
+{
+}
+
 std::wstring codegen::function_::to_string(std::wstring name)
 {
 	std::wstring str(ret_type);
 	str += L" ";
 	str += name;
 	str += L"(";
+	bool flag=false;
 	for (auto &a : arg_type)
 	{
-		str += a;
-		str += L',';
+		if (flag) {
+			str += L',';
+		}
+		else {
+			flag = true;
+		}
+		str += a.first;
 	}
-	if (have_finish) {
-		str.pop_back();
-	}
-	else {
-		str += L"...";
+	if (!have_finish) {
+		str += L",...";
 	}
 	str += L')';
 	return str;
@@ -52,7 +59,12 @@ std::wstring codegen::function_::to_string(std::wstring name)
 
 bool type::is_variable()
 {
-	return !(plus.empty() || plus.back() == 0);
+	if (plus.empty()) {
+		return base_type.index() == 0;
+	}
+	else {
+		return plus.back() == 0;
+	}
 }
 
 size_t type::size() {
@@ -70,7 +82,7 @@ function_::operator std::wstring()
 	str+= L"(";
 	for (auto &a : arg_type)
 	{
-		str += a;
+		str += a.first;
 		str += L',';
 	}
 	if (have_finish) {

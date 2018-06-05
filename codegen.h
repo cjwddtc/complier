@@ -42,9 +42,10 @@ namespace codegen {
 	struct function_
 	{
 		type ret_type;
-		std::vector<type> arg_type;
+		std::vector<std::pair<type,std::wstring>> arg_type;
 		bool have_finish;
 		operator std::wstring();
+		function_();
 		std::wstring to_string(std::wstring name);
 	};
 

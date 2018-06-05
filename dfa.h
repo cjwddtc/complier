@@ -71,7 +71,7 @@ struct dfa
 				return *this;
 			}
 			else {
-				printf("%d\n", *cu);
+				printf("%d,%c\n", *cu,*cu);
 				throw *cu;
 			}
 		}

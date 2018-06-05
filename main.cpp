@@ -105,8 +105,6 @@ int main()
 		v.type.base_type.father() = f;
 		return v;
 	};
-
-
 	type_dec = { function_type }, [](codegen::function f) {
 		cg_type t;
 		t.base_type.father() = f;

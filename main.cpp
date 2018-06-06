@@ -22,7 +22,7 @@ codegen::name_space map;
 using codegen::var;
 using cg_type=codegen::type;
 
-int main()
+int main(int num,char **arg_ar)
 {
 	//不要的词法符号
 	null_symbol(space,L"\ ");
@@ -33,7 +33,6 @@ int main()
 	final_symbol(type, LR"(i8|i16|i32)");
 	final_symbol(ret, LR"(return)");
 	final_symbol(print, LR"(print)");
-	final_symbol(number,LR"((1-9)(0-9)*(.(0-9)*(1-9))?)");
 	final_symbol(int_number,LR"((1-9)(0-9)*)");
 	final_symbol(id, LR"((a-z|_)+)");
 	final_symbol(ar,LR"(\-\>)");
@@ -84,7 +83,7 @@ int main()
 		//从符号表中查找
 		return map.find(str);
 	};
-	const_exp = { number }, [](std::wstring str)->var {
+	const_exp = { int_number }, [](std::wstring str)->var {
 		//从符号表中查找
 		var v;
 		v.real_name = str;
@@ -103,13 +102,13 @@ int main()
 	};
 	block = { function_type ,id,sep }, [](codegen::function f, std::wstring str) {
 		var &v = map.add(str);
-		o << "declare " << f->to_string(v.real_name) << "\n";
+		o << "declare " << f->to_function_dec(v.real_name) << "\n";
 		v.type.base_type.father() = f;
 		return v;
 	};
 	function_prefix = { function_type,id,bigl }, [](codegen::function f, std::wstring str) {
 		var v = map.add(str);
-		o << "define " << f->to_string(v.real_name) << "\n{\n";
+		o << "define " << f->to_function_dec(v.real_name) << "\n{\n";
 		map.enable(true);
 		v.type.base_type.father() = f;
 		for (auto a : f->arg_type)
@@ -118,19 +117,20 @@ int main()
 			if (!a.second.empty())
 			{
 				var v=map.add(a.second);
+				tv.type = v.type;
+				assert(tv.type.plus.back() == 0);
+				tv.type.plus.pop_back();
 				o << v.real_name << L"= alloca " << (std::wstring)v.type << "\n";
-				o << "store " << std::wstring(v.type) << " " << tv.real_name << L"," << std::wstring(v.type) << "* " << v.real_name << "\n";
+				o << "store " << std::wstring(tv.type) << " " << tv.real_name << L"," << std::wstring(v.type) << v.real_name << "\n";
 			}
 		}
 		assert(f->have_finish);
 		return f->ret_type;
 	};
 	block = { function_prefix ,statements,bigr }, [](cg_type t) { o << L"}\n"; map.enable(false); return 0; };
-	type_dec = { function_type }, [](codegen::function f) {
-		cg_type t;
-		t.base_type.father() = f;
-		return t;
-	};
+	std::function<cg_type(codegen::function)> f2t = [](codegen::function f) {cg_type t; t.base_type.father() = f; return t; };
+	type_dec = { function_type,star_op2 }, f2t;
+	type_dec = { function_type }, f2t;
 	arg_node = { type_dec }, [](cg_type t) {
 		std::pair<cg_type, std::wstring> ts(t,L"");
 		return ts;
@@ -173,7 +173,7 @@ int main()
 		assert(v.type.plus.empty());
 		codegen::function f = std::get<codegen::function>(v.type.base_type);
 		t.type = f->ret_type;
-		o << t.real_name << " = call " << std::wstring(v.type) << v.real_name << "(";
+		o << t.real_name << " = call " << f->to_function_call() << v.real_name << "(";
 		bool flag = 0;
 		for (auto a : ts) {
 			if (flag) {
@@ -198,7 +198,8 @@ int main()
 	auto dec_func= [](codegen::type i, std::wstring id) {
 		var &v = map.add(id);
 		v.type = i;
-		o << v.real_name << L"= alloca " << (std::wstring)v.type << "\n";
+		v.type.plus.push_back(0);
+		o << v.real_name << L"= alloca " << (std::wstring)i << "\n";
 		return i;
 	};
 	//声明语句
@@ -218,12 +219,24 @@ int main()
 		if (a.type.is_variable()) {
 			var v = map.newvar();
 			v.type = a.type;
-			o << v.real_name << L"= load " << std::wstring(a.type) << L"," << std::wstring(a.type) << L"*" << a.real_name << "\n";
+			v.type.plus.pop_back();
+			o << v.real_name << L"= load " << std::wstring(v.type) << L"," << std::wstring(a.type)  << a.real_name << "\n";
 			return v;
 		}
 		else {
 			return a;
 		}
+	};
+	exp = { exp ,ml,const_exp,mr }, [](var a, not_use, var b) {
+		var t = map.newvar();
+		assert(a.type.plus.end()[-2] != 0);
+		t.type = a.type;
+		codegen::type tt = a.type;
+		tt.plus.pop_back();
+		t.type.plus.end()[-2] = t.type.plus.back();
+		t.type.plus.pop_back();
+		o << t.real_name << " = " << "getelementptr " << std::wstring(tt) << "," << std::wstring(a.type) << " " << a.real_name << ",i64 0," << std::wstring(b.type) << " " << b.real_name << "\n";
+		return t;
 	};
 	op2 = { star_op2 }, pass_by(0);
 	const_exp ={ const_exp,op2,const_exp }, [](var a,std::wstring op,var b) {
@@ -255,6 +268,8 @@ int main()
 		return v;
 	};
 	const_exp = { exp,equal,const_exp }, [](var a, not_use, var b) {
+		assert(a.type.plus.back() == 0);
+		a.type.plus.pop_back();
 		assert(a.type == b.type);
 		o << "store " << std::wstring(a.type) << " " << b.real_name << L"," << std::wstring(a.type) << "* " << a.real_name << "\n";
 		return b;
@@ -270,9 +285,8 @@ int main()
 	bflag = 1;
 	auto b = make_grammer(root, [](not_use a) {});
 	//读取并执行test.txt的内容
-	std::wifstream ff("D:\\test.txt");
+	std::wifstream ff(arg_ar[1]);
 	auto it = a->read(std::istreambuf_iterator<wchar_t>(ff), std::istreambuf_iterator<wchar_t>());
 	b->read(it.first, it.second);
-	getchar();
-	return 0;
+ 	return 0;
 }

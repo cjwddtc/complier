@@ -33,13 +33,36 @@ codegen::function_::function_():have_finish(true)
 {
 }
 
-std::wstring codegen::function_::to_string(std::wstring name)
+std::wstring codegen::function_::to_function_dec(std::wstring name)
 {
 	std::wstring str(ret_type);
 	str += L" ";
 	str += name;
 	str += L"(";
-	bool flag=false;
+	bool flag = false;
+	for (auto &a : arg_type)
+	{
+		if (flag) {
+			str += L',';
+		}
+		else {
+			flag = true;
+		}
+		str += a.first;
+	}
+	if (!have_finish) {
+		str += L",...";
+	}
+	str += L')';
+	return str;
+}
+
+std::wstring codegen::function_::to_function_call()
+{
+	std::wstring str(ret_type);
+	str += L" ";
+	str += L"(";
+	bool flag = false;
 	for (auto &a : arg_type)
 	{
 		if (flag) {
@@ -67,11 +90,45 @@ bool type::is_variable()
 	}
 }
 
+bool base_type::is_interger() {
+	return true;
+}
+bool base_type::is_function() {
+	return std::visit([](auto arg) {
+		using T = std::decay_t<decltype(arg)>;
+		if constexpr (std::is_same_v<T, function>)
+		{
+			return false;
+		}
+		else {
+			return true;
+		}
+	}, father());
+}
+std::variant<std::wstring, function>&base_type::father()
+{
+	return (std::variant<std::wstring, function> &)*this;
+}
+bool base_type::operator==(const base_type & o)const
+{
+	if (index() == o.index())
+	{
+		if (index() == 1) {
+			auto a = std::get<function>(o);
+			auto b = std::get<function>(*this);
+			bool f= a->ret_type == b->ret_type && a->arg_type == b->arg_type && a->have_finish == b->have_finish;
+			return f;
+		}
+		else if (index() == 0)
+		{
+			return std::get<std::wstring>(o) == std::get<std::wstring>(*this);
+		}
+	}
+	return false;
+}
 size_t type::size() {
 	return 0;
 }
-
-
 
 bool type::operator==(const type &a) const{
 	return base_type == a.base_type && plus == a.plus;
@@ -91,7 +148,7 @@ function_::operator std::wstring()
 	else {
 		str += L"...";
 	}
-	str += L')';
+	str += L")*";
 	return str;
 }
 

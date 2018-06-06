@@ -7,28 +7,15 @@ namespace codegen {
 
 	struct function_;
 	typedef std::shared_ptr<function_> function;
+
 	struct base_type :public std::variant<std::wstring, function>
 	{
-		bool is_interger() {
-			return true;
-		}
-		bool is_function() {
-			return std::visit([](auto arg) {
-				using T = std::decay_t<decltype(arg)>;
-				if constexpr (std::is_same_v<T, function>)
-				{
-					return false;
-				}
-				else {
-					return true;
-				}
-			},father());
-		}
-		std::variant<std::wstring, function>&father()
-		{
-			return (std::variant<std::wstring, function> &)*this;
-		}
+		bool is_interger();
+		bool is_function();
+		std::variant<std::wstring, function>&father();
+		bool operator == (const base_type&o)const;
 	};
+
 	struct type
 	{
 		base_type base_type;
@@ -46,7 +33,8 @@ namespace codegen {
 		bool have_finish;
 		operator std::wstring();
 		function_();
-		std::wstring to_string(std::wstring name);
+		std::wstring to_function_dec(std::wstring name);
+		std::wstring to_function_call();
 	};
 
 	struct var

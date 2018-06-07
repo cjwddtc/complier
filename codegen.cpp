@@ -3,32 +3,8 @@
 #include <functional>
 #include <assert.h>
 #include <variant>
+#include <iostream>
 using namespace codegen;
-type::operator std::wstring()
-{
-	std::wstring str;
-	std::visit([&str](auto arg) {
-		using T = std::decay_t<decltype(arg)>;
-		if constexpr (std::is_same_v<T, std::wstring>)
-		{
-			str += arg;
-		}
-		if constexpr (std::is_same_v<T, function>)
-		{
-			str += (std::wstring)*arg;
-		}
-	}, base_type.father());
-	for (auto a : plus) {
-		if (a) {
-			str = L"[" + std::to_wstring(a) + L" x " + str + L"]";
-		}
-		else {
-			str += L'*';
-		}
-	}
-	return str;
-}
-
 codegen::function_::function_():have_finish(true)
 {
 }
@@ -80,59 +56,123 @@ std::wstring codegen::function_::to_function_call()
 	return str;
 }
 
-bool type::is_variable()
+std::wstring &type::t_type()
 {
-	if (plus.empty()) {
-		return base_type.index() == 0;
-	}
-	else {
-		return plus.back() == 0;
-	}
+	return std::get<std::wstring>(b_type);
 }
-
-bool base_type::is_interger() {
-	return true;
+function_type type::f_type()
+{
+	return std::get<function_type>(b_type);
 }
-bool base_type::is_function() {
-	return std::visit([](auto arg) {
+value_type codegen::type::type_type()const
+{
+	if (plus.empty())
+		return std::visit([](auto arg) {
 		using T = std::decay_t<decltype(arg)>;
-		if constexpr (std::is_same_v<T, function>)
+		if constexpr (std::is_same_v<T, function_type>)
 		{
-			return false;
+			return function;
 		}
 		else {
-			return true;
+			if (arg[0] == L'i')
+				return interger;
+			else
+				return number;
 		}
-	}, father());
-}
-std::variant<std::wstring, function>&base_type::father()
-{
-	return (std::variant<std::wstring, function> &)*this;
-}
-bool base_type::operator==(const base_type & o)const
-{
-	if (index() == o.index())
-	{
-		if (index() == 1) {
-			auto a = std::get<function>(o);
-			auto b = std::get<function>(*this);
-			bool f= a->ret_type == b->ret_type && a->arg_type == b->arg_type && a->have_finish == b->have_finish;
-			return f;
-		}
-		else if (index() == 0)
-		{
-			return std::get<std::wstring>(o) == std::get<std::wstring>(*this);
-		}
-	}
-	return false;
-}
-size_t type::size() {
-	return 0;
+	}, b_type);
+	else if (plus.back())
+		return array;
+	else
+		return pointer;
 }
 
 bool type::operator==(const type &a) const{
-	return base_type == a.base_type && plus == a.plus;
+	if (b_type.index() == a.b_type.index() && plus==a.plus) 
+		if (b_type.index() == 0)
+			return b_type == a.b_type;
+		else
+			return *std::get<function_>(b_type) == *std::get<function_>(a.b_type);
+	return false;
 }
+
+
+int codegen::cmp_type(base_type a, base_type b)
+{
+	return std::stoi(std::get<std::wstring>(a).c_str() + 1) - std::stoi(std::get<std::wstring>(b).c_str() + 1);
+}
+bool type::is_void_ptr()
+{
+	return plus.size() == 1 && plus.back()==0 && t_type()==L"void";
+}
+
+void print(std::wostream &o, type &t)
+{
+	if (t.plus.empty())
+	{
+		o << t.b_type;
+	}
+	else if (t.plus.back())
+	{
+		o << "[ " << t.plus.back() << " x ";
+		t.plus.pop_back();
+		print(o, t);
+		o << " ]";
+	}
+	else
+	{
+		print(o, t);
+		o << " *";
+	}
+}
+name_space codegen::map;
+std::wostream &operator<<(std::wostream &o, type t)
+{
+	print(o, t);
+}
+tmp_var convert(tmp_var s, type t, bool is_force)
+{
+
+	auto dt=t.type_type();
+	auto st = s.type_.type_type();
+	if (dt == interger && st == interger)
+	{
+		auto a = cmp_type(s.type_.b_type, t.b_type);
+		if (a == 0)
+		{
+			return s;
+		}
+
+		tmp_var v = map.newvar();
+		std::wstring ins;
+		if (a > 0)
+		{
+			ins=  L"trunc";
+		}
+		else
+		{
+			ins  = L"sext";
+		}
+		std::wcout << v.real_name << "=" << ins << " " << s.type_.t_type() << " " << s.real_name << " to " << t.t_type() << "\n";
+		return v;
+	}
+	else if((s.type_.is_void_ptr() &&t.type_type()==pointer) || (t.is_void_ptr() && s.type_.type_type() == pointer)){
+		tmp_var v = map.newvar();
+		v.type_ = t;
+		std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " " << t << "\n";
+		return v;
+	}
+	else if (is_force) {
+		tmp_var v = map.newvar();
+		v.type_ = t;
+		std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " " << t << "\n";
+		return v;
+	}
+	else {
+		throw "";
+	}
+}
+
+
 function_::operator std::wstring()
 {
 	std::wstring str(ret_type);

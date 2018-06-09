@@ -131,7 +131,7 @@ int main(int num,char **arg_ar)
 		cg_type t;
 		t.set_type(true);
 		t.f_type() = f;
-		t.plus.push_back(0);
+		t.plus.emplace_back(0);
 		return t;
 	};
 	arg_node = { type_dec }, [](cg_type t) {
@@ -180,7 +180,7 @@ int main(int num,char **arg_ar)
 		std::vector<tmp_var> vs;
 		return vs;
 	};
-	const_exp = { exp,bl,arg_id_list,br }, [](addr_var v,not_use, std::vector<tmp_var> ts) {
+	const_exp = { const_exp,bl,arg_id_list,br }, [](tmp_var v,not_use, std::vector<tmp_var> ts) {
 		return v.call(ts);
 	};
 	type_dec = { type_dec,ml,int_number,mr }, [](codegen::type_info t, not_use, std::wstring str, not_use) {
@@ -217,7 +217,27 @@ int main(int num,char **arg_ar)
 		a.ptr_off_set(b).deref();
 	};
 	const_exp = { exp }, [](addr_var a) {
-		return a.load();
+		switch (a.type_.type_type())
+		{
+		case codegen::array:
+		{
+			tmp_var v;
+			v.real_name = L"0";
+			v.type_.set_type(false);
+			v.type_.t_type() = L"i32";
+			return a.array_off_set(v).addr();
+		}
+		case codegen::function:
+		{
+			tmp_var v;
+			v.type_ = a.type_;
+			v.type_.plus.emplace_back(0);
+			v.real_name = a.real_name;
+			return v;
+		}
+		default:
+			return a.load();
+		}
 	};
 	const_exp = { addr ,exp }, [](not_use, addr_var v)
 	{

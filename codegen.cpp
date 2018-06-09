@@ -49,8 +49,16 @@ namespace codegen {
 			}
 		}, b_type);
 		else if (plus.back())
-			return array;
-		else
+			return array;/*
+		else if (plus.size() == 1 && std::visit([](auto arg) {
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, function_type>)
+			{
+				return true;
+			}
+			return false;
+		},b_type)) {
+		}*/else
 			return pointer;
 	}
 
@@ -111,7 +119,7 @@ namespace codegen {
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, function_type>)
 			{
-				o << arg << "*";
+				o << arg;
 			}
 			else {
 				o << arg;
@@ -164,7 +172,11 @@ namespace codegen {
 
 		auto dt = t.type_type();
 		auto st = s.type_.type_type();
-		if (dt == interger && st == interger)
+		if (t == s.type_)
+		{
+			return s;
+		}
+		else if (dt == interger && st == interger)
 		{
 			auto a = cmp_type(s.type_.b_type, t.b_type);
 			if (a == 0)
@@ -197,9 +209,6 @@ namespace codegen {
 			v.type_ = t;
 			std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " " << t << "\n";
 			return v;
-		}
-		else if(t==s.type_){
-			return s;
 		}
 		else {
 			throw "";
@@ -313,51 +322,53 @@ namespace codegen {
 		v.type_.plus.push_back(0);
 		return v;
 	}
-	tmp_var addr_var::call(std::vector<tmp_var>& var)
+	tmp_var tmp_var::call(std::vector<tmp_var>& var)
 	{
-		if (type_.type_type() != function)
-		{
-			throw "you can not call a not function";
-		}
-		auto f=type_.f_type();
-		auto it = f->arg_type.begin();
-		std::vector<tmp_var> v;
-		v.reserve(var.size());
-		std::transform(var.begin(), var.end(), std::back_inserter(v), [&it,f](tmp_var v) {
-			if (it != f->arg_type.end())
-				return convert(v, *it++, false);
-			else if (f->have_finish)
-				throw "to many function call";
-			else
-				return v;
-		});
-		if (it != f->arg_type.end()) {
-			throw "no enough arg for the function";
-		}
 		tmp_var tv;
-		tv.type_ = f->ret_type;
-		if (!f->ret_type.is_void()) {
-			std::wcout << tv.real_name << " = ";
-		}
-		else {
-			map.delvar();
-		}
-		std::wcout << "call " << f->ret_type;
-		print(std::wcout, f);
-		std::wcout << " " << real_name << "(";
-		bool flag = false;
-		for (auto a : v)
+		if (type_.plus.size() == 1 && type_.plus.back() == 0 && type_.b_type.index() == 1)
 		{
-			if (flag)
-			{
-				std::wcout << ",";
+			auto f = type_.f_type();
+			auto it = f->arg_type.begin();
+			std::vector<tmp_var> v;
+			v.reserve(var.size());
+			std::transform(var.begin(), var.end(), std::back_inserter(v), [&it, f](tmp_var v) {
+				if (it != f->arg_type.end())
+					return convert(v, *it++, false);
+				else if (f->have_finish)
+					throw "to many function call";
+				else
+					return v;
+			});
+			if (it != f->arg_type.end()) {
+				throw "no enough arg for the function";
+			}
+			tv.type_ = f->ret_type;
+			if (!f->ret_type.is_void()) {
+				std::wcout << tv.real_name << " = ";
 			}
 			else {
-				flag = true;
+				map.delvar();
 			}
-			std::wcout << a;
+			std::wcout << "call " << f->ret_type;
+			print(std::wcout, f);
+			std::wcout << " " << real_name << "(";
+			bool flag = false;
+			for (auto a : v)
+			{
+				if (flag)
+				{
+					std::wcout << ",";
+				}
+				else {
+					flag = true;
+				}
+				std::wcout << a;
+			}
+			std::wcout << ")\n";
 		}
-		std::wcout << ")\n";
+		else {
+			throw "you can not call a not function";
+		}
 		return tv;
 	}
 	void addr_var::func_sign(std::vector<std::wstring> names)

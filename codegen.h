@@ -20,7 +20,7 @@ namespace codegen {
 		base_type b_type;
 		std::wstring &t_type();
 		function_type &f_type();
-		void set_type(bool is_function);
+		void set_type(bool is_fun);
 		value_type type_type()const ;
 		std::vector<size_t> plus;
 		bool operator==(const type_info &a) const;
@@ -47,6 +47,7 @@ namespace codegen {
 		std::wstring real_name;
 		type_info type_;
 		addr_var deref();
+		tmp_var call(std::vector<tmp_var> &v);
 		tmp_var ptr_off_set(tmp_var var);
 	};
 
@@ -60,7 +61,6 @@ namespace codegen {
 		tmp_var load();
 		void save(tmp_var var);
 		tmp_var addr();
-		tmp_var call(std::vector<tmp_var> &var);
 		void func_sign(std::vector<std::wstring> names);
 		void func_sign();
 		void alloc();

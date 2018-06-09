@@ -92,6 +92,7 @@ namespace std
 namespace tmp
 {
 	using std::any;
+	any invoke(std::function < void() > func, yacc::unit_it a);
 	template <class T>
 	any invoke(std::function < T() > func, yacc::unit_it a)
 	{

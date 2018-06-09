@@ -19,7 +19,8 @@ namespace codegen {
 	{
 		base_type b_type;
 		std::wstring &t_type();
-		function_type f_type();
+		function_type &f_type();
+		void set_type(bool is_function);
 		value_type type_type()const ;
 		std::vector<size_t> plus;
 		bool operator==(const type_info &a) const;
@@ -41,17 +42,16 @@ namespace codegen {
 	};
 	
 	struct addr_var;
-
 	struct tmp_var
 	{
 		std::wstring real_name;
 		type_info type_;
 		addr_var deref();
-		addr_var ptr_off_set(tmp_var var);
+		tmp_var ptr_off_set(tmp_var var);
 	};
 
 	tmp_var convert(tmp_var s, type_info t, bool is_force);
-	void same_var(tmp_var &s, tmp_var &t);
+	//void same_var(tmp_var &s, tmp_var &t);
 
 	struct addr_var
 	{
@@ -62,8 +62,10 @@ namespace codegen {
 		tmp_var addr();
 		tmp_var call(std::vector<tmp_var> &var);
 		void func_sign(std::vector<std::wstring> names);
-		addr_var off_set(size_t index);
-		addr_var array_off_set(size_t index);
+		void func_sign();
+		void alloc();
+		addr_var off_set(tmp_var index);
+		addr_var array_off_set(tmp_var index);
 	};
 
 	void inst(tmp_var a, tmp_var b, std::wstring ins);
@@ -76,6 +78,7 @@ namespace codegen {
 		addr_var &find(std::wstring str);
 		addr_var &add(std::wstring name);
 		tmp_var newvar();
+		void delvar();
 		name_space();
 		void enable(bool flag);
 	};

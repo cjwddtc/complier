@@ -17,10 +17,10 @@ using yacc::not_use;
 
 using namespace std::string_literals;
 size_t tmp_id;
-std::wostream &o = std::wcout;
-codegen::name_space map;
-using codegen::var;
-using cg_type=codegen::type;
+using codegen::map;
+using codegen::tmp_var;
+using codegen::addr_var;
+using cg_type=codegen::type_info;
 
 int main(int num,char **arg_ar)
 {
@@ -30,10 +30,10 @@ int main(int num,char **arg_ar)
 	null_symbol(newr,L"\r");
 	null_symbol(newt,L"\t");
 	//通过正则表达式定义终结符
-	final_symbol(type, LR"(i8|i16|i32)");
+	final_symbol(type, LR"(i8|i16|i32|void)");
 	final_symbol(ret, LR"(return)");
 	final_symbol(print, LR"(print)");
-	final_symbol(int_number,LR"((1-9)(0-9)*)");
+	final_symbol(int_number,LR"(0|(1-9)(0-9)*)");
 	final_symbol(id, LR"((a-z|_)+)");
 	final_symbol(ar,LR"(\-\>)");
 	final_symbol(op1,LR"(\+|\-)");
@@ -51,6 +51,7 @@ int main(int num,char **arg_ar)
 	final_symbol(comma, LR"(,)");
 	final_symbol(dot, LR"(.)");
 	final_symbol(more, LR"(...)");
+	final_symbol(addr, LR"(&)");
 
 	//下面是非终结符
 	//数组还不支持
@@ -78,59 +79,61 @@ int main(int num,char **arg_ar)
 	symbol(args);
 	symbol(arg_list);
 	symbol(arg_node);
-	//数字本身是变量
-	exp = {id}, [](std::wstring str)->var {
+	exp = {id}, [](std::wstring str)->addr_var {
 		//从符号表中查找
 		return map.find(str);
 	};
-	const_exp = { int_number }, [](std::wstring str)->var {
-		//从符号表中查找
-		var v;
+	//数字本身是变量
+	const_exp = { int_number }, [](std::wstring str)->tmp_var {
+		tmp_var v;
 		v.real_name = str;
-		v.type.base_type.father()= L"i32";
+		v.type_.t_type() = L"i32";
 		return v;
 	};
 	function_type = { type_dec,bl,arg_list ,br },
-		[](cg_type ret_t, not_use, codegen::function ts, not_use) {
-		ts->ret_type = ret_t;
-		return ts;
+		[](cg_type ret_t, not_use,std::pair<codegen::function_type,std::vector<std::wstring> > ts, not_use) {
+		ts.first->ret_type = ret_t;
+		return ts.first;
 	};
 	type_dec = { type }, [](std::wstring str) {
-		codegen::type t;
-		t.base_type.father() = str;
+		cg_type t;
+		t.t_type() = str;
 		return t;
 	};
-	block = { function_type ,id,sep }, [](codegen::function f, std::wstring str) {
-		var &v = map.add(str);
-		o << "declare " << f->to_function_dec(v.real_name) << "\n";
-		v.type.base_type.father() = f;
-		return v;
+	block = { type_dec,id,bl,arg_list,br,sep }, [](cg_type f, std::wstring str,not_use, std::pair<codegen::function_type, std::vector<std::wstring> > ts) {
+
+		addr_var &v = map.add(str);
+		v.type_.set_type(true);
+		ts.first->ret_type = f;
+		v.type_.f_type() = ts.first;
+		v.func_sign();
+		std::cout << "\n";
+		return 0;
 	};
-	function_prefix = { function_type,id,bigl }, [](codegen::function f, std::wstring str) {
-		var v = map.add(str);
-		o << "define " << f->to_function_dec(v.real_name) << "\n{\n";
+
+	function_prefix = { type_dec,id,bl,arg_list,br,bigl }, [](cg_type f, std::wstring str, not_use, std::pair<codegen::function_type, std::vector<std::wstring> > ts) {
+
+		addr_var &v = map.add(str);
+		v.type_.set_type(true);
+		ts.first->ret_type = f;
+		v.type_.f_type() = ts.first;
+		v.func_sign(ts.second);
 		map.enable(true);
-		v.type.base_type.father() = f;
-		for (auto a : f->arg_type)
-		{
-			var tv=map.newvar();
-			if (!a.second.empty())
-			{
-				var v=map.add(a.second);
-				tv.type = v.type;
-				assert(tv.type.plus.back() == 0);
-				tv.type.plus.pop_back();
-				o << v.real_name << L"= alloca " << (std::wstring)v.type << "\n";
-				o << "store " << std::wstring(tv.type) << " " << tv.real_name << L"," << std::wstring(v.type) << v.real_name << "\n";
-			}
-		}
-		assert(f->have_finish);
-		return f->ret_type;
+		std::cout << "\n{";
+		return 0;
 	};
-	block = { function_prefix ,statements,bigr }, [](cg_type t) { o << L"}\n"; map.enable(false); return 0; };
-	std::function<cg_type(codegen::function)> f2t = [](codegen::function f) {cg_type t; t.base_type.father() = f; return t; };
-	type_dec = { function_type,star_op2 }, f2t;
-	type_dec = { function_type }, f2t;
+	block = { function_prefix,statements,bigr }, []() {
+		map.enable(false);
+		std::wcout << "}\n";
+		return 0;
+	};
+	type_dec = { function_type,star_op2 }, [](codegen::function_type f) {
+		cg_type t;
+		t.set_type(true);
+		t.f_type() = f;
+		t.plus.push_back(0);
+		return t;
+	};
 	arg_node = { type_dec }, [](cg_type t) {
 		std::pair<cg_type, std::wstring> ts(t,L"");
 		return ts;
@@ -140,66 +143,58 @@ int main(int num,char **arg_ar)
 		return ts;
 	};
 	arg_list = { args }, pass_by(0);
-	arg_list = {}, []() {codegen::function f(new codegen::function_); return f; };
-	args = { arg_node }, [](std::pair<cg_type, std::wstring> t) {
-		codegen::function f(new codegen::function_);
-		f->arg_type.emplace_back(t);
-		return f;
+	arg_list = {}, []() {
+		codegen::function_type f(new codegen::function_);
+		std::pair<codegen::function_type, std::vector<std::wstring> > p;
+		p.first = f;
+		return p; 
 	};
-	args = { args ,comma,arg_node }, [](codegen::function ts,not_use, std::pair<cg_type, std::wstring> t) {
-		ts->arg_type.emplace_back(t);
+	args = { arg_node }, [](std::pair<cg_type, std::wstring> t) {
+		codegen::function_type f(new codegen::function_);
+		f->arg_type.emplace_back(t.first);
+		std::pair<codegen::function_type, std::vector<std::wstring> > p;
+		p.first = f;
+		p.second.emplace_back(t.second);
+		return p;
+	};
+	args = { args ,comma,arg_node }, [](std::pair<codegen::function_type, std::vector<std::wstring> > ts,not_use, std::pair<cg_type, std::wstring> t) {
+		ts.first->arg_type.emplace_back(t.first);
+		ts.second.emplace_back(t.second);
 		return ts;
 	};
-	args = { args,comma,more }, [](codegen::function f) {
-		f->have_finish = false;
+	args = { args,comma,more }, [](std::pair<codegen::function_type, std::vector<std::wstring> > f) {
+		f.first->have_finish = false;
 		return f; 
 	};
-	arg_ids = { const_exp }, [](var t) {
-		std::vector<var> vs;
+	arg_ids = { const_exp }, [](tmp_var t) {
+		std::vector<tmp_var> vs;
 		vs.emplace_back(t);
 		return vs;
 	};
-	arg_ids = { arg_ids ,comma,const_exp }, [](std::vector<var> ts, not_use, var t) {
+	arg_ids = { arg_ids ,comma,const_exp }, [](std::vector<tmp_var> ts, not_use, tmp_var t) {
 		ts.emplace_back(t);
 		return ts;
 	};
 	arg_id_list = { arg_ids }, pass_by(0);
 	arg_id_list = {}, []() {
-		std::vector<var> vs; 
+		std::vector<tmp_var> vs;
 		return vs;
 	};
-	const_exp = { const_exp,bl,arg_id_list,br }, [](var v,not_use, std::vector<var> ts) {
-		var t = map.newvar();
-		assert(v.type.plus.empty());
-		codegen::function f = std::get<codegen::function>(v.type.base_type);
-		t.type = f->ret_type;
-		o << t.real_name << " = call " << f->to_function_call() << v.real_name << "(";
-		bool flag = 0;
-		for (auto a : ts) {
-			if (flag) {
-				o << ",";
-			}
-			else {
-				flag = 1;
-			}
-			o << std::wstring(a.type) << " " << a.real_name;
-		}
-		o << ")\n";
-		return t;
+	const_exp = { exp,bl,arg_id_list,br }, [](addr_var v,not_use, std::vector<tmp_var> ts) {
+		return v.call(ts);
 	};
-	type_dec = { type_dec,ml,int_number,mr }, [](codegen::type t, not_use, std::wstring str, not_use) {
+	type_dec = { type_dec,ml,int_number,mr }, [](codegen::type_info t, not_use, std::wstring str, not_use) {
 		t.plus.push_back(std::stoll(str));
 		return t;
 	};
-	type_dec = { type_dec,star_op2 }, [](codegen::type t, not_use) {
+	type_dec = { type_dec,star_op2 }, [](codegen::type_info t, not_use) {
 		t.plus.push_back(0);
 		return t;
 	};
-	auto dec_func= [](codegen::type i, std::wstring id) {
-		var &v = map.add(id);
-		v.type = i;
-		v.type.plus.push_back(0);
-		o << v.real_name << L"= alloca " << (std::wstring)i << "\n";
+	auto dec_func= [](codegen::type_info i, std::wstring id) {
+		addr_var &v = map.add(id);
+		v.type_ = i;
+		v.alloc();
 		return i;
 	};
 	//声明语句
@@ -208,70 +203,89 @@ int main(int num,char **arg_ar)
 	dec = { more_dec }, pass_by(0);
 	declare = { dec,sep }, pass_by(0);
 	statement = { declare }, pass_by(0);
-	statement = { ret,const_exp,sep }, [](not_use,var a) {
-		o << "ret " << std::wstring(a.type) << a.real_name << "\n";
+	statement = { ret,const_exp,sep }, [](not_use,tmp_var a) {
+		std::wcout << "ret " << a << "\n";
 		return 0;
 	};
 	//这个pass_by表示规约后，被规约的第二个符号backet的值直接赋给规程成的backet
 	exp = { bl,exp,br }, pass_by(1);
 	exp = { bl,const_exp,br }, pass_by(1);
-	const_exp = { exp }, [](var a) {
-		if (a.type.is_variable()) {
-			var v = map.newvar();
-			v.type = a.type;
-			v.type.plus.pop_back();
-			o << v.real_name << L"= load " << std::wstring(v.type) << L"," << std::wstring(a.type)  << a.real_name << "\n";
-			return v;
-		}
-		else {
-			return a;
-		}
+	exp = { exp ,ml,const_exp,mr }, [](addr_var a, not_use, tmp_var b) {
+		return a.off_set(b);
 	};
-	exp = { exp ,ml,const_exp,mr }, [](var a, not_use, var b) {
-		var t = map.newvar();
-		assert(a.type.plus.end()[-2] != 0);
-		t.type = a.type;
-		codegen::type tt = a.type;
-		tt.plus.pop_back();
-		t.type.plus.end()[-2] = t.type.plus.back();
-		t.type.plus.pop_back();
-		o << t.real_name << " = " << "getelementptr " << std::wstring(tt) << "," << std::wstring(a.type) << " " << a.real_name << ",i64 0," << std::wstring(b.type) << " " << b.real_name << "\n";
-		return t;
+	exp = {const_exp ,ml,const_exp,mr }, [](tmp_var a, not_use, tmp_var b) {
+		a.ptr_off_set(b).deref();
+	};
+	const_exp = { exp }, [](addr_var a) {
+		return a.load();
+	};
+	const_exp = { addr ,exp }, [](not_use, addr_var v)
+	{
+		return v.addr();
 	};
 	op2 = { star_op2 }, pass_by(0);
-	const_exp ={ const_exp,op2,const_exp }, [](var a,std::wstring op,var b) {
-		assert(a.type.plus.empty());
-		assert(b.type.plus.empty());
-		assert(a.type.base_type==b.type.base_type);
-		std::wstring str;
-		if (op == L"*") 
-			str = L"mul";
-		else if(op==L"/")
-			str = L"div";
-		var v= map.newvar();
-		o << v.real_name << "=" << (a.type.base_type.is_interger() ? L"" : L"f")
-			<< str << " " << std::wstring(a.type) << a.real_name << "," << b.real_name << L"\n";
-		v.type = a.type;
+	const_exp ={ const_exp,op2,const_exp }, [](tmp_var a,std::wstring op, tmp_var b) {
+		tmp_var v = map.newvar();
+		if (a.type_.type_type() == codegen::interger && b.type_.type_type() == codegen::interger)
+		{
+			codegen::type_info &t=v.type_;
+			int n = codegen::cmp_type(a.type_.b_type, b.type_.b_type);
+			if (n > 0) {
+				t = a.type_;
+				b = codegen::convert(b, t,false);
+			}
+			else if (n < 0)
+			{
+				t = b.type_;
+				a = codegen::convert(a, t, false);
+			}
+			else {
+				t = a.type_;
+			}
+			std::wstring str;
+			if (op == L"*")
+				str = L"mul";
+			else if (op == L"/")
+				str = L"div";
+			std::wcout << v.real_name << "=" << str << " " << t << " " << a.real_name << "," << b.real_name << "\n";
+		}
+		else {
+			throw "can not compute not number type";
+		}
 		return v;
 	};
-	const_exp = { const_exp,op1,const_exp }, [](var a, std::wstring  op, var b) {
-		assert(a.type == b.type);
-		std::wstring str;
-		if (op == L"+")
-			str = L"add";
-		else if (op == L"-")
-			str = L"sub";
-		var v = map.newvar();
-		o << v.real_name << "=" << (a.type.base_type.is_interger() ? L"" : L"f")
-			<< str << " " << std::wstring(a.type) << a.real_name << "," << b.real_name << L"\n";
-		v.type = a.type;
+	const_exp = { const_exp,op1,const_exp }, [](tmp_var a, std::wstring op, tmp_var b) {
+		tmp_var v = map.newvar();
+		if (a.type_.type_type() == codegen::interger && b.type_.type_type() == codegen::interger)
+		{
+			codegen::type_info &t = v.type_;
+			int n = codegen::cmp_type(a.type_.b_type, b.type_.b_type);
+			if (n > 0) {
+				t = a.type_;
+				b = codegen::convert(b, t, false);
+			}
+			else if (n < 0)
+			{
+				t = b.type_;
+				a = codegen::convert(a, t, false);
+			}
+			else {
+				t = a.type_;
+			}
+			std::wstring str;
+			if (op == L"+")
+				str = L"add";
+			else if (op == L"-")
+				str = L"sub";
+			std::wcout << v.real_name << "=" << str << " " << t << " " << a.real_name << "," << b.real_name << "\n";
+		}
+		else {
+			throw "can not compute not number type";
+		}
 		return v;
 	};
-	const_exp = { exp,equal,const_exp }, [](var a, not_use, var b) {
-		assert(a.type.plus.back() == 0);
-		a.type.plus.pop_back();
-		assert(a.type == b.type);
-		o << "store " << std::wstring(a.type) << " " << b.real_name << L"," << std::wstring(a.type) << "* " << a.real_name << "\n";
+	const_exp = { exp,equal,const_exp }, [](addr_var a, not_use, tmp_var b) {
+		a.save(convert(b, a.type_,false));
 		return b;
 	};
 	root = { block },pass_by(0);
@@ -287,6 +301,7 @@ int main(int num,char **arg_ar)
 	//读取并执行test.txt的内容
 	std::wifstream ff(arg_ar[1]);
 	auto it = a->read(std::istreambuf_iterator<wchar_t>(ff), std::istreambuf_iterator<wchar_t>());
+	std::cout << std::endl;
 	b->read(it.first, it.second);
  	return 0;
 }

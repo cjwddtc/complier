@@ -18,9 +18,19 @@ namespace codegen {
 	{
 		return std::get<std::wstring>(b_type);
 	}
-	function_type type_info::f_type()
+	function_type &type_info::f_type()
 	{
 		return std::get<function_type>(b_type);
+	}
+	void type_info::set_type(bool is_function)
+	{
+		if (is_function)
+		{
+			b_type = function_type();
+		}
+		else {
+			b_type = L"";
+		}
 	}
 	value_type type_info::type_type()const
 	{
@@ -49,7 +59,7 @@ namespace codegen {
 			if (b_type.index() == 0)
 				return b_type == a.b_type;
 			else
-				return *std::get<function_>(b_type) == *std::get<function_>(a.b_type);
+				return *std::get<function_type>(b_type) == *std::get<function_type>(a.b_type);
 		return false;
 	}
 
@@ -83,6 +93,7 @@ namespace codegen {
 		}
 		else
 		{
+			t.plus.pop_back();
 			print(o, t);
 			o << " *";
 		}
@@ -91,11 +102,12 @@ namespace codegen {
 	std::wostream &operator<<(std::wostream &o, type_info t)
 	{
 		print(o, t);
+		return o;
 	}
 
 	std::wostream &operator<<(std::wostream &o, codegen::base_type &t)
 	{
-		std::visit([](auto arg) {
+		std::visit([&o](auto arg) {
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, function_type>)
 			{
@@ -170,6 +182,7 @@ namespace codegen {
 			{
 				ins = L"sext";
 			}
+			v.type_ = t;
 			std::wcout << v.real_name << "=" << ins << " " << s.type_.t_type() << " " << s.real_name << " to " << t.t_type() << "\n";
 			return v;
 		}
@@ -184,6 +197,9 @@ namespace codegen {
 			v.type_ = t;
 			std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " " << t << "\n";
 			return v;
+		}
+		else if(t==s.type_){
+			return s;
 		}
 		else {
 			throw "";
@@ -231,6 +247,10 @@ namespace codegen {
 		return v;
 
 	}
+	void name_space::delvar()
+	{
+		global_index--;
+	}
 	codegen::name_space::name_space() :global_index(1)
 	{
 	}
@@ -257,7 +277,7 @@ namespace codegen {
 		v.type_.plus.pop_back();
 		return v;
 	}
-	addr_var tmp_var::ptr_off_set(tmp_var var)
+	tmp_var tmp_var::ptr_off_set(tmp_var var)
 	{
 		if (type_.type_type() != pointer)
 		{
@@ -269,15 +289,16 @@ namespace codegen {
 		tmp_var v = map.newvar();
 		v.type_ = type_;
 		v.type_.plus.pop_back();
-		std::wcout << v.real_name << " = " << "getelementptr" << v.type_ 
+		std::wcout << v.real_name << " = " << "getelementptr " << v.type_ 
 			<< ","	<< *this << "," << var << "\n";
+		return v;
 	}
 	tmp_var addr_var::load()
 	{
 		tmp_var v = map.newvar();
 		v.type_ = type_;
 		std::wcout << v.real_name << "= load " << v.type_ << " , " << *this << "\n";
-		return tmp_var();
+		return v;
 	}
 
 	void addr_var::save(tmp_var var)
@@ -313,10 +334,119 @@ namespace codegen {
 		if (it != f->arg_type.end()) {
 			throw "no enough arg for the function";
 		}
-		tmp_var v;
-		if () {
-
+		tmp_var tv;
+		tv.type_ = f->ret_type;
+		if (!f->ret_type.is_void()) {
+			std::wcout << tv.real_name << " = ";
 		}
-		return tmp_var();
+		else {
+			map.delvar();
+		}
+		std::wcout << "call " << f->ret_type;
+		print(std::wcout, f);
+		std::wcout << " " << real_name << "(";
+		bool flag = false;
+		for (auto a : v)
+		{
+			if (flag)
+			{
+				std::wcout << ",";
+			}
+			else {
+				flag = true;
+			}
+			std::wcout << a;
+		}
+		std::wcout << ")\n";
+		return tv;
+	}
+	void addr_var::func_sign(std::vector<std::wstring> names)
+	{
+		auto f = type_.f_type();
+		std::wcout << "define " << f->ret_type << " " << real_name << "(";
+		bool flag = false;
+		for (auto a : f->arg_type)
+		{
+			if (flag)
+			{
+				std::wcout << ",";
+			}
+			else {
+				flag = true;
+			}
+			std::wcout << a;
+		}
+		std::wcout << ")";
+		auto it = names.begin();
+		for (auto a : f->arg_type)
+		{
+			tmp_var tv = map.newvar();
+			if (it->empty())
+			{
+				addr_var av = map.add(*it++);
+				av.type_ = a;
+				av.alloc();
+				av.save(tv);
+			}
+		}
+		return ;
+	}
+	void addr_var::func_sign()
+	{
+		auto f = type_.f_type();
+		std::wcout << "declare " << f->ret_type << " " << real_name << "(";
+		bool flag = false;
+		for (auto a : f->arg_type)
+		{
+			if (flag)
+			{
+				std::wcout << ",";
+			}
+			else {
+				flag = true;
+			}
+			std::wcout << a;
+		}
+		if (!f->have_finish)
+		{
+			if (flag)
+			{
+				std::wcout << ",";
+			}
+			std::wcout << "...";
+		}
+		std::wcout << ")";
+		return;
+	}
+	void addr_var::alloc()
+	{
+		std::wcout << real_name << L"= alloca " << type_ << "\n";
+	}
+	addr_var addr_var::off_set(tmp_var index)
+	{
+		if (type_.type_type() == array) {
+			return array_off_set(index);
+		}
+		else {
+			return load().ptr_off_set(index).deref();
+		}
+		throw "you cannot off_set a" + type_.type_type();
+		return addr_var();
+	}
+	addr_var addr_var::array_off_set(tmp_var index)
+	{
+		if (type_.type_type() != array)
+		{
+			throw "you can not off_set not pointer type";
+		}
+		if (index.type_.type_type() != interger) {
+			throw "index must be interger";
+		}
+		tmp_var v = map.newvar();
+		v.type_ = type_;
+		std::wcout << v.real_name << " = " << "getelementptr " << v.type_
+			<< "," << *this << ",i64 0," << index << "\n";
+		v.type_.plus.back() = 0;
+		return v.deref();
 	}
 }

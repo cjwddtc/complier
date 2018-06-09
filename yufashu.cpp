@@ -45,7 +45,14 @@ namespace std
 		}
 	};
 }
-
+namespace tmp
+{
+	any invoke(std::function < void() > func, yacc::unit_it a)
+	{
+		func();
+		return any();
+	}
+}
 //项目为状态类型
 typedef project state_type;
 
@@ -60,6 +67,7 @@ struct var_info
 	size_t pos;
 	v_type_n types;
 };
+#include <iostream>
 void gammer::read_one(unit a)
 {
 	auto it = map.find(state_index(stack_state.back(), a.first));
@@ -96,7 +104,11 @@ void gammer::read_one(unit a)
 		}, it->second);
 	}
 	else {
-		printf("unacceptable token %s", a.first.c_str());
+		printf("unacceptable token %s\n", a.first.c_str());
+		for (auto a : stack_symbol)
+		{
+			printf("%s\n", a.type().name());
+		}
 		throw a;
 	}
 ;

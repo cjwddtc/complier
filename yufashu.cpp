@@ -313,13 +313,13 @@ public:
 
 //下面都不重要
 //thread_local grammer_maker global_grammer_impl;
-thread_local grammer_maker *global_grammer_impl;
+thread_local grammer_maker global_grammer_impl;
 thread_local size_t sid = 1;
 
 std::shared_ptr<gammer> yacc::make_grammer(symbol_impl sym, specification_handle root_handle)
 {
 	sid = 1;
-	return global_grammer_impl->make_grammer(sym.id, root_handle);
+	return global_grammer_impl.make_grammer(sym.id, root_handle);
 }
 
 
@@ -328,11 +328,11 @@ symbol_impl::symbol_impl(std::string name):id(name)
 }
 
 specification_left &symbol_impl::operator=(const std::initializer_list<symbol_impl> &symbols)
-{
+{/*
 	if (global_grammer_impl == 0) {
 		global_grammer_impl = new grammer_maker();
-	}
-	auto &l = global_grammer_impl->add(id);;
+	}*/
+	auto &l = global_grammer_impl.add(id);;
 	std::vector<input_type> vec(symbols.size());
 	l.values.reserve(symbols.size());
 	std::transform(symbols.begin(), symbols.end(), std::back_inserter(l.values), [](auto a) {return a.id; });

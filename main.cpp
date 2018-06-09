@@ -30,7 +30,7 @@ int main(int num,char **arg_ar)
 	null_symbol(newr,L"\r");
 	null_symbol(newt,L"\t");
 	//通过正则表达式定义终结符
-	final_symbol(type, LR"(i8|i16|i32|void)");
+	final_symbol(type, LR"(i8|i16|i32|void|i64)");
 	final_symbol(ret, LR"(return)");
 	final_symbol(print, LR"(print)");
 	final_symbol(int_number,LR"(0|(1-9)(0-9)*)");
@@ -243,7 +243,14 @@ int main(int num,char **arg_ar)
 	{
 		return v.addr();
 	};
+	exp = { star_op2,const_exp }, [](not_use, tmp_var v)
+	{
+		return v.deref();
+	};
 	op2 = { star_op2 }, pass_by(0);
+	const_exp = { bl,type_dec,br,const_exp }, [](not_use,codegen::type_info t,not_use,tmp_var v) {
+		return convert(v, t, true);
+	};
 	const_exp ={ const_exp,op2,const_exp }, [](tmp_var a,std::wstring op, tmp_var b) {
 		tmp_var v = map.newvar();
 		if (a.type_.type_type() == codegen::interger && b.type_.type_type() == codegen::interger)

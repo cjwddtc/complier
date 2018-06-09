@@ -201,13 +201,13 @@ namespace codegen {
 		else if ((s.type_.is_void_ptr() && t.type_type() == pointer) || (t.is_void_ptr() && s.type_.type_type() == pointer)) {
 			tmp_var v = map.newvar();
 			v.type_ = t;
-			std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " " << t << "\n";
+			std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " to " << t << "\n";
 			return v;
 		}
 		else if (is_force && t.type_type() == pointer && s.type_.type_type() == pointer) {
 			tmp_var v = map.newvar();
 			v.type_ = t;
-			std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " " << t << "\n";
+			std::wcout << v.real_name << "=bitcast " << s.type_ << " " << s.real_name << " to " << t << "\n";
 			return v;
 		}
 		else {
@@ -300,6 +300,7 @@ namespace codegen {
 		v.type_.plus.pop_back();
 		std::wcout << v.real_name << " = " << "getelementptr " << v.type_ 
 			<< ","	<< *this << "," << var << "\n";
+		v.type_.plus.emplace_back(0);
 		return v;
 	}
 	tmp_var addr_var::load()
@@ -342,13 +343,11 @@ namespace codegen {
 			if (it != f->arg_type.end()) {
 				throw "no enough arg for the function";
 			}
-			tv.type_ = f->ret_type;
 			if (!f->ret_type.is_void()) {
+				tv = map.newvar();
 				std::wcout << tv.real_name << " = ";
 			}
-			else {
-				map.delvar();
-			}
+			tv.type_ = f->ret_type;
 			std::wcout << "call " << f->ret_type;
 			print(std::wcout, f);
 			std::wcout << " " << real_name << "(";

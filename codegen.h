@@ -8,20 +8,43 @@ namespace codegen {
 
 	struct function_;
 	typedef std::shared_ptr<function_> function_type;
-	enum value_type
+
+
+	constexpr uint32_t is_interger = 0x1;
+	constexpr uint32_t is_unsigned = 0x2;
+	constexpr uint32_t is_float = 0x4;
+	constexpr uint32_t is_function = 0x8;
+	constexpr uint32_t is_pointer = 0x10;
+	constexpr uint32_t is_array = 0x20;
+	constexpr uint32_t is_number = 0x6;
+	constexpr uint32_t is_plus = 0x30;
+
+
+
+	struct interger
 	{
-		interger,function,number,pointer,array
+		uint16_t size;
+		bool is_unsigned;
 	};
 
-	typedef  std::variant<std::wstring, function_type> base_type;
+	struct void_type {};
+
+	struct number
+	{
+		uint16_t size;
+	};
+
+	bool operator==(const function_type &a, const function_type &b);
+
+	typedef  std::variant<void_type,interger,number, function_type> base_type;
 
 	struct type_info
 	{
 		base_type b_type;
 		std::wstring &t_type();
 		function_type &f_type();
-		void set_type(bool is_fun);
-		value_type type_type()const ;
+		void set_type(uint32_t );
+		uint32_t type_type()const ;
 		std::vector<size_t> plus;
 		bool operator==(const type_info &a) const;
 		bool is_void_ptr();
@@ -29,7 +52,8 @@ namespace codegen {
 	};
 
 
-	int cmp_type(base_type a, base_type b);
+	int cmp_type(base_type &a, base_type &b);
+
 
 
 	struct function_
@@ -51,7 +75,6 @@ namespace codegen {
 		tmp_var ptr_off_set(tmp_var var);
 	};
 
-	tmp_var convert(tmp_var s, type_info t, bool is_force);
 	//void same_var(tmp_var &s, tmp_var &t);
 
 	struct addr_var
@@ -67,6 +90,8 @@ namespace codegen {
 		addr_var off_set(tmp_var index);
 		addr_var array_off_set(tmp_var index);
 	};
+	std::pair<tmp_var,tmp_var> convert(tmp_var a, tmp_var b);
+	tmp_var convert(tmp_var s, type_info t, bool is_force);
 
 	void inst(tmp_var a, tmp_var b, std::wstring ins);
 
@@ -86,6 +111,8 @@ namespace codegen {
 	std::wostream &operator<<(std::wostream &o, codegen::type_info t);
 	std::wostream &operator<<(std::wostream &o, codegen::base_type &t);
 	std::wostream &operator<<(std::wostream &o, codegen::function_type &t);
+	std::wostream &operator<<(std::wostream &o, codegen::number &t);
+	std::wostream &operator<<(std::wostream &o, codegen::interger &t);
 	std::wostream &operator<<(std::wostream &o, addr_var &t);
 	std::wostream &operator<<(std::wostream &o, tmp_var &t);
 	extern name_space map;

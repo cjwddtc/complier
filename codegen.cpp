@@ -22,57 +22,60 @@ namespace codegen {
 	{
 		return std::get<function_type>(b_type);
 	}
-	void type_info::set_type(bool is_function)
+	void type_info::set_type(uint32_t t)
 	{
-		if (is_function)
+		switch (t)
 		{
+		case 0:
+			b_type = interger();
+			break;
+		case 1:
+			b_type = number();
+			break;
+		case 2:
 			b_type = function_type();
-		}
-		else {
-			b_type = L"";
+			break;
 		}
 	}
-	value_type type_info::type_type()const
+	uint32_t type_info::type_type()const
 	{
-		if (plus.empty())
-			return std::visit([](auto arg) {
+		uint32_t flag=0;
+		if (!plus.empty())
+		{
+			flag = plus.back() ? is_array : is_pointer;
+		}
+		return std::visit([](auto arg)->uint32_t {
 			using T = std::decay_t<decltype(arg)>;
 			if constexpr (std::is_same_v<T, function_type>)
 			{
-				return function;
+				return is_function;
 			}
-			else {
-				if (arg[0] == L'i')
-					return interger;
-				else
-					return number;
-			}
-		}, b_type);
-		else if (plus.back())
-			return array;/*
-		else if (plus.size() == 1 && std::visit([](auto arg) {
-			using T = std::decay_t<decltype(arg)>;
-			if constexpr (std::is_same_v<T, function_type>)
+			if constexpr (std::is_same_v<T, interger>)
 			{
-				return true;
+				if (arg.is_unsigned)
+				{
+					return is_unsigned | is_interger;
+				}
+				return is_interger;
 			}
-			return false;
-		},b_type)) {
-		}*/else
-			return pointer;
+			if constexpr (std::is_same_v<T, number>)
+			{
+				return is_float;
+			}
+			return 0;
+		}, b_type)|flag;
+	}
+
+	bool operator==(const function_type &a, const function_type &b)
+	{
+		return *a == *b;
 	}
 
 	bool type_info::operator==(const type_info &a) const {
-		if (b_type.index() == a.b_type.index() && plus == a.plus)
-			if (b_type.index() == 0)
-				return b_type == a.b_type;
-			else
-				return *std::get<function_type>(b_type) == *std::get<function_type>(a.b_type);
-		return false;
+		return b_type == a.b_type &&plus == a.plus;
 	}
 
-
-	int codegen::cmp_type(base_type a, base_type b)
+	int codegen::cmp_type(base_type &a, base_type &b)
 	{
 		return std::stoi(std::get<std::wstring>(a).c_str() + 1) - std::stoi(std::get<std::wstring>(b).c_str() + 1);
 	}
@@ -157,6 +160,10 @@ namespace codegen {
 		o << t->ret_type;
 		print(o, t);
 		return o;
+	}
+	std::wostream & operator<<(std::wostream & o, codegen::number & t)
+	{
+		// TODO: 在此处插入 return 语句
 	}
 	std::wostream & operator<<(std::wostream & o, addr_var & t)
 	{

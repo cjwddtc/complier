@@ -1,6 +1,17 @@
-float a;
-a=55.4;
-float b;
-b=33.2;
-a=a+b;
-print a;
+i32 printf(i8 *,...);
+void set_value(i64 *);
+i32 main(){
+i8[13] str;
+str[0]=72;
+i8*p;
+p=str;
+p[1]=111;
+p=&str[2];
+*p=108;
+i16 *q;
+q=(i16*)&str[3];
+*q=111*256+108;
+set_value((i64*)&str[5]);
+printf(str);
+return 0;
+}

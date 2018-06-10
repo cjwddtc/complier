@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "yufashu.hpp"
+#include <optional>
 #include <iterator>
 using namespace yacc;
 
@@ -44,7 +45,14 @@ namespace std
 		}
 	};
 }
-
+namespace tmp
+{
+	any invoke(std::function < void() > func, yacc::unit_it a)
+	{
+		func();
+		return any();
+	}
+}
 //项目为状态类型
 typedef project state_type;
 
@@ -59,6 +67,7 @@ struct var_info
 	size_t pos;
 	v_type_n types;
 };
+#include <iostream>
 void gammer::read_one(unit a)
 {
 	auto it = map.find(state_index(stack_state.back(), a.first));
@@ -95,7 +104,11 @@ void gammer::read_one(unit a)
 		}, it->second);
 	}
 	else {
-		printf("unexpect token %s\n", a.first.c_str());
+		printf("unacceptable token %s\n", a.first.c_str());
+		for (auto a : stack_symbol)
+		{
+			printf("%s\n", a.type().name());
+		}
 		throw a;
 	}
 ;
@@ -191,36 +204,38 @@ public:
 	typedef typename state_to_map<state_type, input_type>::state_set state_set;
 	typedef typename state_to_map<state_type, input_type>::next_map next_map;
 	std::unordered_multimap<input_type, specification_left> gram_map;
+	std::unordered_map<input_type, std::pair<std::unordered_set<input_type> , bool> > first_map;
 	state_map map;
 	grammer_maker() :now_level(0) {	}
 	size_t now_level;
 	///***
 	//求first集
-	void get_first_(input_type id, std::unordered_set<input_type> &set)
+	std::pair<std::unordered_set<input_type>, bool>  &get_first(input_type id)
 	{
-		if (gram_map.find(id) == gram_map.end())
-		{
-			set.insert(id);
-		}
-		else
-		{
-			auto itp = gram_map.equal_range(id);
-			bool flag = true;
-			for (auto it = itp.first; it != itp.second; it++)
+		auto &a = first_map[id];
+		if (a.first.empty()) {
+			if (gram_map.find(id) == gram_map.end())
 			{
-				if (it->second.values.front() == id) {
-					set.insert(id);
-					continue;
-				}
-				else {
-					get_first_(it->second.values.front(), set);
+				a.first.insert(id);
+			}
+			else {
+				auto itp = gram_map.equal_range(id);
+				for (auto it = itp.first; it != itp.second; it++)
+				{
+					if (!it->second.values.empty()) 
+						for (auto &b : it->second.values) {
+							auto &c = get_first(b);
+							a.first.merge(c.first);
+							if (c.second) {
+								goto null_exit;
+							}
+						}
+					a.second = true;
+				null_exit:;
 				}
 			}
 		}
-	}
-	void get_first(input_type id, std::unordered_set<input_type> &set)
-	{
-		get_first_(id, set);
+		return a;
 	}
 	///***
 	//闭包
@@ -231,13 +246,17 @@ public:
 			input_type other = type.to_id.values[type.pos];
 			auto itp = gram_map.equal_range(other);
 			std::unordered_set<input_type> set;
-			if (type.pos + 1 == type.to_id.values.size())
+			auto pos = type.pos;
+			while (++pos != type.to_id.values.size())
 			{
-				set.insert(type.fin_id);
+				auto &b = get_first(type.to_id.values[pos]);
+				set.merge(b.first);
+				if (!b.second) {
+					goto null_fin;
+				}
 			}
-			else {
-				get_first(type.to_id.values[type.pos + 1], set);
-			}
+			set.insert(type.fin_id);
+			null_fin:
 			for (auto it = itp.first; it != itp.second; it++)
 			{
 				for (auto id : set)
@@ -305,13 +324,14 @@ public:
 };
 
 //下面都不重要
-thread_local grammer_maker global_grammer_impl;
+//thread_local grammer_maker global_grammer_impl;
+thread_local grammer_maker *global_grammer_impl;
 thread_local size_t sid = 1;
 
 std::shared_ptr<gammer> yacc::make_grammer(symbol_impl sym, specification_handle root_handle)
 {
 	sid = 1;
-	return global_grammer_impl.make_grammer(sym.id, root_handle);
+	return global_grammer_impl->make_grammer(sym.id, root_handle);
 }
 
 
@@ -321,7 +341,10 @@ symbol_impl::symbol_impl(std::string name):id(name)
 
 specification_left &symbol_impl::operator=(const std::initializer_list<symbol_impl> &symbols)
 {
-	auto &l = global_grammer_impl.add(id);;
+	if (global_grammer_impl == 0) {
+		global_grammer_impl = new grammer_maker();
+	}
+	auto &l = global_grammer_impl->add(id);;
 	std::vector<input_type> vec(symbols.size());
 	l.values.reserve(symbols.size());
 	std::transform(symbols.begin(), symbols.end(), std::back_inserter(l.values), [](auto a) {return a.id; });

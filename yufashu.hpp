@@ -92,15 +92,11 @@ namespace std
 namespace tmp
 {
 	using std::any;
-	template <class T, class F>
-	any invoke(std::function < T(F) > func, yacc::unit_it a)
-	{
-		return func(std::any_cast<F>(a[0]));
-	}
+	any invoke(std::function < void() > func, yacc::unit_it a);
 	template <class T>
-	any invoke(std::function < T(yacc::not_use) > func, yacc::unit_it a)
+	any invoke(std::function < T() > func, yacc::unit_it a)
 	{
-		return func(yacc::not_use());
+		return func();
 	}
 	template <class T,class ...ARG>
 	any invoke(std::function < T(yacc::not_use,ARG...) > func, yacc::unit_it a)

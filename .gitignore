@@ -14,3 +14,4 @@ obj\
 *.sublime-workspace
 /.vs
 build
+*.s

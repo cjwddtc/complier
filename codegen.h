@@ -19,19 +19,19 @@ namespace codegen {
 	constexpr uint32_t is_number = 0x6;
 	constexpr uint32_t is_plus = 0x30;
 
-
-
 	struct interger
 	{
 		uint16_t size;
 		bool is_unsigned;
 	};
 
-	struct void_type {};
+	struct void_type {
+		bool operator==(const void_type &)const;
+	};
 
 	struct number
 	{
-		uint16_t size;
+		uint16_t type;;
 	};
 
 	bool operator==(const function_type &a, const function_type &b);
@@ -47,14 +47,7 @@ namespace codegen {
 		uint32_t type_type()const ;
 		std::vector<size_t> plus;
 		bool operator==(const type_info &a) const;
-		bool is_void_ptr();
-		bool is_void();
 	};
-
-
-	int cmp_type(base_type &a, base_type &b);
-
-
 
 	struct function_
 	{
@@ -75,8 +68,6 @@ namespace codegen {
 		tmp_var ptr_off_set(tmp_var var);
 	};
 
-	//void same_var(tmp_var &s, tmp_var &t);
-
 	struct addr_var
 	{
 		std::wstring real_name;
@@ -90,10 +81,9 @@ namespace codegen {
 		addr_var off_set(tmp_var index);
 		addr_var array_off_set(tmp_var index);
 	};
-	std::pair<tmp_var,tmp_var> convert(tmp_var a, tmp_var b);
-	tmp_var convert(tmp_var s, type_info t, bool is_force);
 
-	void inst(tmp_var a, tmp_var b, std::wstring ins);
+	void convert(tmp_var &a,tmp_var &b);
+	void convert(tmp_var &s, const type_info &t, bool is_force=false);
 
 	struct name_space
 	{

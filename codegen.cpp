@@ -75,20 +75,6 @@ namespace codegen {
 		return b_type == a.b_type &&plus == a.plus;
 	}
 
-	int codegen::cmp_type(base_type &a, base_type &b)
-	{
-		return std::stoi(std::get<std::wstring>(a).c_str() + 1) - std::stoi(std::get<std::wstring>(b).c_str() + 1);
-	}
-	bool type_info::is_void_ptr()
-	{
-		return plus.size() == 1 && plus.back() == 0 && t_type() == L"void";
-	}
-
-	bool type_info::is_void()
-	{
-		return plus.empty() && t_type() == L"void";
-	}
-
 	void print(std::wostream &o, type_info &t)
 	{
 		if (t.plus.empty())
@@ -163,7 +149,24 @@ namespace codegen {
 	}
 	std::wostream & operator<<(std::wostream & o, codegen::number & t)
 	{
-		// TODO: 在此处插入 return 语句
+		switch (t.type)
+		{
+			case 0:
+				o << "half";
+				break;
+			case 1:
+				o << "float";
+				break;
+			case 2:
+				o << "double";
+				break;
+			case 3:
+				o << "fp128";
+				break;
+			default:
+				assert(0);
+		}
+		return o;
 	}
 	std::wostream & operator<<(std::wostream & o, addr_var & t)
 	{
@@ -174,17 +177,23 @@ namespace codegen {
 	{
 		return o << t.type_ << " " << t.real_name;
 	}
-	tmp_var convert(tmp_var s, type_info t, bool is_force)
+	void convert(tmp_var &s,const type_info &t, bool is_force)
 	{
-
-		auto dt = t.type_type();
-		auto st = s.type_.type_type();
 		if (t == s.type_)
 		{
-			return s;
+			return;
 		}
-		else if (dt == interger && st == interger)
+		std::visit([](auto a,auto b) {
+			using Ta = std::decay_t<decltype(a)>;
+			using Tb = std::decay_t<decltype(b)>;
+			if constexpr (std::is_same_v<T, function_type>)
+			{
+				return is_function;
+			}
+		},s.type_.b_type, t.b_type) ;
+		else if (dt|is_interger && st|is_interger)
 		{
+			if(std::get<interger>(s.type_.b_type)>)
 			auto a = cmp_type(s.type_.b_type, t.b_type);
 			if (a == 0)
 			{
@@ -465,5 +474,9 @@ namespace codegen {
 			<< "," << *this << ",i64 0," << index << "\n";
 		v.type_.plus.back() = 0;
 		return v.deref();
+	}
+	bool void_type::operator==(const void_type &) const
+	{
+		return true;
 	}
 }

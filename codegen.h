@@ -4,6 +4,7 @@
 #include <optional>
 #include <variant>
 #include <ostream>
+#include <memory>
 namespace codegen {
 
 	struct function_;

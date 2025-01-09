@@ -43,12 +43,7 @@ namespace yacc {
 		uint64_t level;
 		specification_left &operator,(pass_by p);
 		template <class T>
-		specification_left &operator,(T han)
-		{
-			handler = [han](unit_it a) {
-				return tmp::invoke(tmp::FFL(han), a); };
-			return *this;
-		}
+		specification_left &operator,(T han);
 		specification_left &operator,(right_combin);
 	};
 	//ÒÆ½ø
@@ -99,15 +94,17 @@ namespace tmp
 		return func();
 	}
 	template <class T,class ...ARG>
-	any invoke(std::function < T(yacc::not_use,ARG...) > func, yacc::unit_it a)
-	{
-		std::function<T(ARG...)> f = [func, a](ARG ... arg) {return func(yacc::not_use(), arg...);};
-		return invoke(f, a + 1);
-	}
+	any invoke(std::function < T(yacc::not_use,ARG...) > func, yacc::unit_it a);
 	template <class T, class F, class ...ARG>
 	any invoke(std::function < T(F, ARG...) > func, yacc::unit_it a)
 	{
 		std::function<T(ARG...)> f = [func, a](ARG ... arg) {return func(std::any_cast<F>(a[0]), arg...); };
+		return invoke(f, a + 1);
+	}
+	template <class T,class ...ARG>
+	any invoke(std::function < T(yacc::not_use,ARG...) > func, yacc::unit_it a)
+	{
+		std::function<T(ARG...)> f = [func, a](ARG ... arg) {return func(yacc::not_use(), arg...);};
 		return invoke(f, a + 1);
 	}
 	template<typename T>
@@ -128,6 +125,13 @@ namespace tmp
 	}
 }
 namespace yacc{
+	template <class T>
+	specification_left &specification_left::operator,(T han)
+	{
+		handler = [han](unit_it a) {
+			return tmp::invoke(tmp::FFL(han), a); };
+		return *this;
+	}
 	//´Ê·¨·ÖÎöÆ÷
 	class gammer
 	{

@@ -72,7 +72,7 @@ namespace codegen {
 	}
 
 
-	int codegen::cmp_type(base_type a, base_type b)
+	int cmp_type(base_type a, base_type b)
 	{
 		return std::stoi(std::get<std::wstring>(a).c_str() + 1) - std::stoi(std::get<std::wstring>(b).c_str() + 1);
 	}

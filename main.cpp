@@ -25,7 +25,7 @@ using cg_type=codegen::type_info;
 int main(int num,char **arg_ar)
 {
 	//不要的词法符号
-	null_symbol(space,L"\ ");
+	null_symbol(space,L" ");
 	null_symbol(newline,L"\n");
 	null_symbol(newr,L"\r");
 	null_symbol(newt,L"\t");

@@ -2,6 +2,7 @@
 #include "yufashu.hpp"
 #include <optional>
 #include <iterator>
+#include <limits>
 using namespace yacc;
 
 //lr(1)项目
@@ -38,10 +39,11 @@ namespace std
 		typedef std::size_t result_type;
 		result_type operator()(argument_type const& s) const noexcept
 		{
+			result_type const h1(std::hash<input_type>{}(s.from_id));
 			result_type const h2(std::hash<input_type>{}(s.fin_id));
 			result_type const h3(std::hash<const char*>{}((const char *)&s.to_id));
 			result_type const h4(std::hash<size_t>{}(s.pos));
-			return h2 ^ h3^h4;
+			return h1 ^ h2 ^ h3^h4;
 		}
 	};
 }
@@ -220,18 +222,26 @@ public:
 			}
 			else {
 				auto itp = gram_map.equal_range(id);
+				bool have_rec=false;
 				for (auto it = itp.first; it != itp.second; it++)
 				{
 					if (!it->second.values.empty()) 
 						for (auto &b : it->second.values) {
+							if (b==id) {
+								have_rec=true;
+								goto null_exit;
+							}
 							auto &c = get_first(b);
 							a.first.merge(c.first);
-							if (c.second) {
+							if (!c.second) {
 								goto null_exit;
 							}
 						}
 					a.second = true;
 				null_exit:;
+					if (have_rec && a.second) {
+						abort();
+					}
 				}
 			}
 		}
@@ -261,6 +271,7 @@ public:
 			{
 				for (auto id : set)
 				{
+					
 					project prd(it->first, it->second, id);
 					if (ptr.find(prd) == ptr.end())
 					{
@@ -390,6 +401,7 @@ int main__() {
 	symbol(b);
 	symbol(c);
 	symbol(d);
+	
 	bflag = 1;
 	//定义产生式后面的是lambda表达式相当于动态定义的函数，产生式规约时将会被调用
 	//为什么可以写成这样，是因为我重载了赋值运算符和逗号运算符

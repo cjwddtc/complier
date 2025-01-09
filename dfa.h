@@ -1,5 +1,5 @@
 /*
-Õâ¸öÎÄ¼şÊµÏÖÁËÍ¨¹ılr(1)¶ÔÕıÔò±í´ïÊ½¶ÁÈ¡²¢×ª»»³ÉnfaÔÚ×ª»»³Édfa
+ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Êµï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½lr(1)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½È¡ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½nfaï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½dfa
 */
 #pragma once
 #include <unordered_map>
@@ -19,7 +19,7 @@ using output_type = yacc::input_type;
 typedef size_t state_type;
 typedef std::pair<state_type, wchar_t> status_index;
 typedef  wchar_t input_type;
-//ÊµÏÖhashº¯Êı£¬²»ÖØÒª
+//Êµï¿½ï¿½hashï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òª
 namespace std
 {
 	template<> struct hash<status_index>
@@ -33,12 +33,12 @@ namespace std
 constexpr std::string_view ignore_id = "__ignore__";
 struct dfa
 {
-	//×´Ì¬×ªÒÆ±í
+	//×´Ì¬×ªï¿½Æ±ï¿½
 	std::unordered_map<status_index, size_t> status_map;
-	//¿É½áÊø×´Ì¬±í(ÔÚÕâĞ©×´Ì¬ÊÇ½ÓÊÜ²»¿É½ÓÊÜÊäÈëÊÓÎª½âÎöµ½Ò»¸ö´Ê·¨µ¥Ôª
+	//ï¿½É½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½Ğ©×´Ì¬ï¿½Ç½ï¿½ï¿½Ü²ï¿½ï¿½É½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ê·ï¿½ï¿½ï¿½Ôª
 	std::unordered_map<state_type, output_type> fin_status;
 	dfa(std::unordered_map<status_index, size_t> &&m, std::unordered_map<state_type, output_type> &&f);
-	//Ê¹ÓÃÁËÒ»Ğ©ÌØÊâµÄÆæ¼¼ÒùÇÉÊµÏÖÁË½«Ò»¶Ô×Ö·ûÁ÷µü´úÆ÷×ª»¯³É´Ê·¨·ûºÅµü´úÆ÷²¢Ö±½Ó´«¸øÓï·¨·ÖÎöÆ÷£¬²»ÖØÒª
+	//Ê¹ï¿½ï¿½ï¿½ï¿½Ò»Ğ©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¼¼ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½Ë½ï¿½Ò»ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½É´Ê·ï¿½ï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó´ï¿½ï¿½ï¿½ï¿½ï·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òª
 	template <class IT>
 	struct word_iterator
 	{
@@ -116,18 +116,18 @@ struct dfa
 	}
 };
 
-//Í¨¹ınfa´´½¨dfa
+//Í¨ï¿½ï¿½nfaï¿½ï¿½ï¿½ï¿½dfa
 std::shared_ptr<dfa> make_dfa();
-//Õâ¸öÀàÓÉfinal_symbolºÍnull_symbol¼Ì³Ğ£¬ÔÚ±£Ö¤ÔÚ¹¹Ôìsymbol¶ÔÏßÖ®Ç°È«¾ÖnfaÒÑ±»¹¹Ôì
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½final_symbolï¿½ï¿½null_symbolï¿½Ì³Ğ£ï¿½ï¿½Ú±ï¿½Ö¤ï¿½Ú¹ï¿½ï¿½ï¿½symbolï¿½ï¿½ï¿½ï¿½Ö®Ç°È«ï¿½ï¿½nfaï¿½Ñ±ï¿½ï¿½ï¿½ï¿½ï¿½
 struct force_init {
 	force_init();
 };
-//ÖÕ½á·û£¬Í¨¹ı´Ê·¨·ÖÎöÆ÷Êä³öµÄ·ûºÅ¼Ì³Ğ×Ô·ÇÖÕ½á·û
+//ï¿½Õ½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ê·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½Å¼Ì³ï¿½ï¿½Ô·ï¿½ï¿½Õ½ï¿½ï¿½
 struct final_symbol_impl :force_init,public symbol_impl
 {
 	final_symbol_impl(std::wstring str,std::string id);
 };
-//¿Õ×Ö·û£¬´Ê·¨·ÖÎöÆ÷²»»áÊä³öÕâĞ©´Ê·¨µ¥Ôª£¨±ÈÈç¿Õ¸ñ»Ø³µµÈµÈ£©
+//ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½Ê·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ©ï¿½Ê·ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¸ï¿½Ø³ï¿½ï¿½ÈµÈ£ï¿½
 struct null_symbol_impl :force_init,public symbol_impl
 {
 	null_symbol_impl(std::wstring str);
